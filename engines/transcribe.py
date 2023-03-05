@@ -3,6 +3,7 @@
 from datetime import datetime
 import random
 import time
+import json
 
 def get_name():
     return "AWS Transcribe"
@@ -70,3 +71,26 @@ def run_engine(settings, source_fn):
     s3.delete_object(Bucket=settings['s3_bucket'], Key=s3_key + ".json")
 
     return data
+
+def parse_data(data):
+    ret = []
+    
+    data = json.loads(data)
+
+    # For the case where only one item is transcribed, treat it
+    # as a group of one item
+    if isinstance(data, dict):
+        data = [data]
+    
+    for cur in data:
+        for item in cur['results']['items']:
+            word = item['alternatives'][0]['content']
+            if 'start_time' in item:
+                ret.append([word, float(item['start_time']), float(item['end_time'])])
+            else:
+                ret[-1][0] += word
+
+    return ret
+
+if __name__ == "__main__":
+    print("This module is not meant to be run directly")

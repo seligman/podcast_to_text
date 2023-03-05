@@ -1,0 +1,12 @@
+{
+    "source_mp3": "International_Space_Station.mp3",
+    "engine": "aws-transcribe",
+    "engine_details": {
+        "aws_access_key_id": "",
+        "aws_secret_access_key": "",
+        "profile_name": "",
+        "region_name": "us-west-2",
+        "s3_bucket": "example-bucket",
+        "s3_prefix": "example/"
+    }
+}
