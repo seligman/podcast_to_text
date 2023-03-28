@@ -2,15 +2,35 @@
 
 from command_opts import opt, main_entry
 from list_picker import list_picker
-import engines.transcribe
 import gzip
 import os
 import json
 import templater
 
-ENGINES = {
-    "aws-transcribe": engines.transcribe,
-}
+ENGINES = {}
+import engines.transcribe
+def setup_engines():
+    # Validate the engines implemenet the expected functions
+    to_setup = [
+        engines.transcribe,
+    ]
+    expected = [
+        ('get_id', 'Get an unique ID for this engine'),
+        ('get_name', 'Describe the engine'),
+        ('get_opts', 'Get all available options for the engine'),
+        ('run_engine', 'Run the engine and transcribe audio'),
+        ('parse_data', 'Parse the output of run_engine to a normalized format'),
+    ]
+    for module in to_setup:
+        if module.get_id() in ENGINES:
+            raise Exception(f"The engine ID '{module.get_id()}' was use more than once!")
+        ENGINES[module.get_id()] = module
+
+    for name, module in ENGINES.items():
+        for func, desc in expected:
+            if not hasattr(module, func):
+                raise Exception(f"Helper '{name}' does contain function {func}() for '{desc}!")
+setup_engines()
 
 @opt("Show all available transcription engines")
 def show_engines():

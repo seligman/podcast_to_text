@@ -8,6 +8,9 @@ import json
 def get_name():
     return "AWS Transcribe"
 
+def get_id():
+    return "aws-transcribe"
+
 def get_opts():
     return [
         ("aws_access_key_id", "AWS access key (leave blank to use profile/role)"),
