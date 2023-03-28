@@ -671,12 +671,6 @@ function setupWakeLock() {
                 wakeLock = await navigator.wakeLock.request('screen');
             } catch (err) { }
         };
-        const handleVisibilityChange = () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
-                requestWakeLock();
-            }
-        };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
     }
 }
 
@@ -838,6 +832,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }
 
     function pageAwake() {
+        if (wakeLock !== null) {
+            wakeLock = null;
+            turnOnWakeLock();
+        }
         if (lastHighlighted !== null && autoScroll) {
             lastHighlighted.para.scrollIntoView({"block": "nearest"});
         }
