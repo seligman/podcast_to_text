@@ -44,11 +44,31 @@ class IsParagraph:
         self.last_end = max(start, end)
         self.last_sentence = (len(word) > 0 and word[-1] in ".?!")
 
+def split_phrases(words):
+    ret = []
+    for word, start, end in words:
+        if start > end:
+            start, end = end, start
+        if " " in word:
+            dur = end - start
+            temp = word.split(" ")
+            dur /= len(temp)
+            for i, word in enumerate(temp):
+                ret.append((word, i * dur + start, (i + 1) * dur + start))
+        else:
+            ret.append((word, start, end))
+    return ret
+
 def fill_out(words, mp3_fn):
     with open("template.html", "rt") as f:
         data = f.read()
     
-    # First off, combine clusters together so the read along indicator has a hope of keeping up
+    # For engines that output phrases instead of words, invent where the boundaries are
+    if " " in "".join(x[0] for x in words):
+        # There's a space in at least on word, so pass it off to our helper to split up
+        words = split_phrases(words)
+
+    # Combine clusters together so the read along indicator has a hope of keeping up
     merged = []
     for word, start, end in words:
         if start > end:
