@@ -12,7 +12,7 @@ def get_opts():
     return [
         ("aws_access_key_id", "AWS access key (leave blank to use profile/role)"),
         ("aws_secret_access_key", "Secret key associated with the access key (leave blank to use profile/role)"),
-        ("profile_name", "AWS Profile Name (leave blank to use key/role)"),
+        ("profile_name", "AWS Profile Name (leave blank to use key/role/default profile)"),
         ("region_name", "AWS Region to use (leave blank to use key/role information)"),
         ("s3_bucket", "S3 Bucket to use to store artifacts (must exist)"),
         ("s3_prefix", "Prefix to store data in S3 Bucket (can be blank)"),

@@ -6,6 +6,7 @@ import engines.transcribe
 import gzip
 import os
 import json
+import templater
 
 ENGINES = {
     "aws-transcribe": engines.transcribe,
@@ -23,6 +24,9 @@ def create_settings():
     fn = input("Please enter the filename to write the settings to: ")
     settings = {}
     settings["source_mp3"] = input("Please enter the filename of the source MP3 file: ")
+    settings["target_fn"] = input("Please enter the target output HTML name (blank to name after the MP3): ")
+    if len(settings["target_fn"]) == 0:
+        del settings["target_fn"]
     settings["engine"] = list_picker([("Select engine:",)] + [(value.get_name(), key) for key, value in ENGINES.items()])
     settings["engine_details"] = {}
     for setting, desc in ENGINES[settings["engine"]].get_opts():
@@ -50,9 +54,14 @@ def create_webpage(settings_file):
             f.write(data)
 
     data = engine.parse_data(data)
-    # TODO: Do something interesting with this data
-    for x in data:
-        print(x)
+    data = templater.fill_out(data, settings['source_mp3'])
+    if "target_fn" in settings:
+        dest = settings["target_fn"]
+    else:
+        dest = settings['source_mp3'] + ".html"
+    with open(dest, "wt", newline="") as f:
+        f.write(data)
+    print(f"{dest} created!")
 
 if __name__ == "__main__":
     main_entry('func')

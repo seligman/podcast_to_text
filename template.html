@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"/>
+<link rel="apple-touch-icon" href="favicon.png"/>
+<link rel="shortcut icon" href="favicon.png"/>
+<meta name="viewport" content="width=device-width"/>
+<meta name="viewport" content="initial-scale=1.0"/>
+<title>{{TITLE}}</title>
+<style>
+:root {
+    --content-size: 100%;
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background-color: #333;
+    color: #ccc;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 12pt;
+    box-sizing: border-box;
+}
+
+.overlay {
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+}
+
+.content {
+    font-size: var(--content-size);
+    padding: 10px;
+    padding-top: 60px;
+    padding-bottom: 30px;
+}
+
+.cols {
+    display: flex;
+    flex-flow: column;
+}
+
+.rows {
+    display: flex;
+    flex-flow: row;
+}
+
+@keyframes fade {
+    0% {opacity: 0;transform:translateX(4em);}
+    100% {opacity: 1;transform:translateX(0em);}
+}
+
+@-webkit-keyframes fade {
+    0% {opacity: 0;transform:translateX(4em);}
+    100% {opacity: 1;transform:translateX(0em);}
+}
+
+@keyframes unfade {
+    0% {opacity: 1;transform:translateX(0em);}
+    100% {opacity: 0;transform:translateX(4em);}
+}
+
+@-webkit-keyframes unfade {
+    0% {opacity: 1;transform:translateX(0em);}
+    100% {opacity: 0;transform:translateX(4em);}
+}
+
+.hideDrop {
+    -webkit-animation: unfade 0.25s;
+    animation: unfade 0.25s;
+}
+
+.showDrop {
+    -webkit-animation: fade 0.25s;
+    animation: fade 0.25s;
+}
+
+.dropdown {
+    position: fixed;
+    top: calc(62px - 10px);
+    width: 10em;
+    left: calc(100% - 10em);
+    align-items: center;
+    padding: 10px;
+    line-height: 150%;
+    background-color: #222;
+    box-shadow: 0 1px 2px hsla(0,0%,0%,0.1), 0 1px 4px hsla(0, 0%, 0%, 0.1), 0 2px 8px hsla(0, 0%, 0%, 0.1);
+}
+
+.util {
+    cursor: pointer;
+    color: #bbf;
+    overflow: hidden;
+    width: 100%;
+    display: block;
+}
+
+.util:hover {
+    background-color: #559;
+}
+
+.header {
+    align-items: center;
+    background-color: #222;
+    position: fixed;
+    box-sizing: border-box;
+    top: -10px;
+    padding-top: 10px;
+    left: 0;
+    width: 100%;
+    height: WIDGET_HEIGHTpx;
+    box-shadow: 0 1px 2px hsla(0,0%,0%,0.1), 0 1px 4px hsla(0, 0%, 0%, 0.1), 0 2px 8px hsla(0, 0%, 0%, 0.1);
+}
+
+.sel::before {
+    content: "\2022\00a0";
+}
+
+.nosel::before {
+    content: "\00a0\00a0";
+}
+
+.fill {
+    flex: 100%;
+}
+
+.fillToEdge {
+    height: 100%;
+    width: 100%;
+}
+
+span.current {
+    color:#fff;
+    background:#a11;
+    box-shadow:3px 0 0 #a11, -3px 0 0 #a11;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+span.word {
+    cursor: pointer;
+}
+
+p {
+    padding:4px 0;
+    margin-left: 7ch;
+    text-indent: -7ch;
+    margin-top: .1em;
+    margin-bottom: .1em;
+    line-height: 1.3;
+}
+
+p.current {
+    background-color: #444;
+    box-shadow:4px 0 0 #444, -7ch 0 0 #444;
+    border-radius: 5px;
+}
+
+@media only screen and (max-width: 600px) {
+    .header {
+        height: calc(WIDGET_HEIGHTpx * 1.3);
+    }
+    .content {
+        padding-top: calc(60px * 1.3);
+    }
+    .play {
+        transform: scale(1.9);
+    }
+    p {
+        margin-left: 0;
+        text-indent: 0;
+    }
+    p.current {
+        box-shadow:4px 0 0 #444, -4px 0 0 #444;
+    }
+}
+
+.timecode {
+    color: #aaa;
+}
+
+.hidden {
+    display: none;
+}
+
+.play {
+    margin-left: 1em;
+    margin-right: 1em;
+    margin-bottom: 5px;
+    margin-top: 5px;
+    cursor: pointer;
+}
+
+.slider {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    height: 15px;
+    margin: 10px;
+    border-radius: 5px;  
+    outline: none;
+    background: #444;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #bbf;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #bbf;
+    cursor: pointer;
+} 
+
+.link {
+    cursor: pointer;
+    margin: 10px;
+} 
+
+.leftpad {
+    margin: 10px;
+}
+
+.circlePause {
+	transition: stroke-dashoffset 250ms ease-in-out;
+	stroke-dashoffset: 0;
+	fill: none;
+}
+
+.circlePlay {
+	transition: stroke-dashoffset 250ms ease-in-out;
+	stroke-dashoffset: 314;
+}
+</style>
+<script>
+
+var words = /* Start_Word_Data */{WORDS_VAR}/* End_Word_Data */,
+    wordID = "{{WORD_ID}}",
+    byTime = [],
+    hideAnimation = 0,
+    paras = [],
+    parasReady = false,
+    lastHighlighted = null,
+    isUserMoving = false,
+    scrollState = [-1, -1, -1],
+    playerLeftToLoad = 2,
+    playerIsPlaying = false,
+    jumpOnClick = true,
+    autoScroll = true,
+    wakeLock = null,
+    requestWakeLock = null;
+
+function move(e) {
+    if (!jumpOnClick) {
+        return;
+    }
+    if (e.srcElement !== undefined) {
+        e = e.srcElement.at;
+    }
+    var player = document.getElementById('player');
+    if (playerLeftToLoad == -1) {
+        hideAnimation = (new Date().getTime()) + 300;
+        var paused = player.paused;
+        if (!paused) {
+            player.pause();
+        }
+        player.currentTime = e;
+        if (!paused) {
+            player.play();
+        }
+        updateScrolls();
+    } else {
+        player.newTarget = e;
+        player.play();
+    }
+};
+
+document.addEventListener('keydown', e => {
+    if (!e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        if (e.code === 'Space') {
+            e.preventDefault();
+            play();
+            return true;
+        }
+        if ((e.code === 'ArrowUp') || (e.code === 'ArrowDown')) {
+            e.preventDefault();
+            var temp = e.code === 'ArrowUp' ? lastHighlighted.para.previousSibling : lastHighlighted.para.nextSibling;
+            if (temp !== null) {
+                temp = temp.childNodes;
+                for (var i = 0; i < temp.length; i++) {
+                    if (temp[i].hasOwnProperty('at')) {
+                        document.getElementById('player').currentTime = (temp[i].at + temp[i].at) / 2;
+                        return true;
+                    }
+                }
+            }
+            return true;
+        }
+        if ((e.code === 'ArrowLeft') || (e.code === 'ArrowRight')) {
+            e.preventDefault();
+            var word = e.code === 'ArrowLeft' ? lastHighlighted.previousSibling : lastHighlighted.nextSibling;
+            var line = lastHighlighted.para;
+            while (line !== null) {
+                while (word !== null) {
+                    if (word.hasOwnProperty('at')) {
+                        document.getElementById('player').currentTime = (word.at + word.atEnd) / 2;
+                        return true;
+                    }
+                    word = e.code === 'ArrowLeft' ? word.previousSibling : word.nextSibling;
+                }
+                line = e.code === 'ArrowLeft' ? line.previousSibling : line.nextSibling;
+                if (line !== null) {
+                    word = line.childNodes[e.code === 'ArrowLeft' ? line.childNodes.length - 1 : 0];
+                }
+            }
+            return true;
+        }
+    }
+    if (e.key === 's' && !e.altKey && e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        e.preventDefault();
+        selectPos();
+        return true;
+    }
+});
+
+function pad(value, width=1, padChar='0') {
+    value = Math.floor(value) + '';
+    return value.length >= width ? value : new Array(width - value.length + 1).join(padChar) + value;
+};
+
+function getTick(at) {
+    return pad(at / 3600) + ":" + pad((at % 3600) / 60, 2) + ":" + pad(at % 60, 2);
+}
+
+function play() {
+    var player = document.getElementById('player');
+    if (player.paused) {
+        player.play();
+    } else {
+        player.pause();
+    }
+}
+
+function posChange() {
+    move(document.getElementById("pos").value / 10);
+}
+
+function posMoving() {
+    isUserMoving = true;
+}
+
+function posMoved() {
+    isUserMoving = false;
+}
+
+function bisect(target, handler, invert) {
+    var start = 0, end = target.length - 1;
+    var valid = null;
+    while (start != end) {
+        var mid = Math.floor((start + end) / 2);
+        if (handler(target[mid])) {
+            if (invert) {
+                end = mid;
+            } else {
+                start = mid + 1;
+            }
+            valid = target[mid];
+        } else {
+            if (invert) {
+                start = mid + 1;
+            } else {
+                end = mid;
+            }
+        }
+    }
+    if (handler(target[start])) {
+        return target[start];
+    } else {
+        return valid;
+    }
+}
+
+function updateScrolls() {
+    if (!parasReady) {
+        return;
+    }
+
+    var pos = document.getElementById("pos");
+    var loc = pos.value / pos.max;
+
+    var temp = [window.innerHeight, paras[paras.length - 1].getBoundingClientRect().bottom, loc];
+    if (temp[0] == scrollState[0] && temp[1] == scrollState[1] && temp[2] == scrollState[2]) {
+        return;
+    }
+    scrollState = temp;
+
+    var pageStart = null, pageEnd = null;
+
+    pageStart = bisect(paras, e => e.getBoundingClientRect().bottom >= 50, true);
+    pageEnd = bisect(paras, e => e.getBoundingClientRect().top <= window.innerHeight, false);
+
+    if (pageStart !== null && pageEnd !== null) {
+        function calcPerc(e, invert) {
+            var rect = e.getBoundingClientRect();
+            var perc = (invert ? (window.innerHeight - rect.top) : (rect.bottom - 50)) / (rect.bottom - rect.top);
+            perc = perc < 0 ? 0 : (perc > 1 ? 1 : perc);
+            if (invert) {
+                return ((e.end * perc) + (e.start * (1 - perc)));
+            } else {
+                return ((e.start * perc) + (e.end * (1 - perc)));
+            }
+        }
+        
+        pageStart = calcPerc(pageStart, false) ;
+        pageEnd = calcPerc(pageEnd, true) ;
+
+        var done = '#555', togo = '#333', page = '#66a';
+
+        var view = 3;
+        if (pageEnd <= loc) {
+            view = 1;
+        } else if (pageStart >= loc) {
+            view = 2;
+        }
+
+        loc = 'calc((100% - 26px) * '+loc+' + 13px)';
+        pageStart = 'calc((100% - 26px) * '+pageStart+' + 13px)';
+        pageEnd = 'calc((100% - 26px) * '+pageEnd+' + 13px)';
+        var temp = '';
+        if (view == 1) {
+            temp = ','+done+' 0% '+pageStart+
+                ','+page+' '+pageStart+' '+pageEnd+
+                ','+done+' '+pageStart+' '+loc+
+                ','+togo+' '+loc+' '+'100%';
+        } else if (view == 2) {
+            temp = ','+done+' 0% '+loc+
+                ','+togo+' '+loc+' '+pageStart+
+                ','+page+' '+pageStart+' '+pageEnd+
+                ','+togo+' '+pageEnd+' 100%';
+        } else {
+            temp = ','+done+' 0% '+pageStart+
+                ','+page+' '+pageStart+' '+pageEnd+
+                ','+togo+' '+pageEnd+' '+'100%';
+        }
+        pos.style.background = 'linear-gradient(to right' + temp + ')';
+    }
+}
+
+function posChanging() {
+    updateScrolls();
+    document.getElementById("posText").innerHTML = getTick(pos.value / 10) + '<br><font size="-1">' + ('-' + getTick((pos.max - pos.value) / 10)) + "</font>";
+}
+
+function hideDrop() {
+    var drop = document.getElementById("dropdown");
+    if (drop.className == "dropdown showDrop") {
+        drop.className = "dropdown hideDrop";
+    }
+    var overlay = document.getElementById("overlay");
+    overlay.className = "overlay hidden";
+}
+
+function selectPos() {
+    var player = document.getElementById('player');
+    var newPos = prompt("Please enter an offset to skip to:", getTick(player.currentTime));
+    if (newPos.includes(":") || newPos.includes(".") || newPos.includes("-")) {
+        newPos = newPos.replace(/[.-]/g, ":");
+        newPos = newPos.split(":");
+        if (newPos.length == 3 || newPos.length == 2) {
+            var h = parseInt(newPos.length == 3 ? newPos[0] : '0');
+            var m = parseInt(newPos.length == 3 ? newPos[1] : newPos[0]);
+            var s = parseInt(newPos.length == 3 ? newPos[2] : newPos[1]);
+            if (h >= 0 && h <= 99 && m >= 0 && m <= 59 && s >= 0 && s <= 59) {
+                var temp = h * 3600 + m * 60 + s;
+                if (temp >= 0 && temp <= 43200) {
+                    move(h * 3600 + m * 60 + s);
+                }
+            }
+        }
+    } else {
+        var temp = parseFloat(newPos);
+        if (temp >= 0 && temp <= 43200) {
+            move(temp);
+        }
+    }
+    hideDrop();
+}
+
+function showLinks() {
+    var drop = document.getElementById("dropdown");
+    if (!drop.hasOwnProperty('eventSetup')) {
+        drop.eventSetup = true;
+        drop.addEventListener('animationend', (e) => {
+            if (drop.className == "dropdown hideDrop") {
+                drop.className = "dropdown hideDrop hidden";
+            }
+        });
+    }
+
+    if (drop.className == "dropdown showDrop") {
+        hideDrop();
+    } else {
+        drop.className = "dropdown showDrop";
+        var overlay = document.getElementById("overlay");
+        overlay.className = "overlay";
+    }
+}
+
+var clipboard = (function(window, document, navigator) {
+    var textArea,
+        copy;
+
+    function isOS() {
+        return navigator.userAgent.match(/ipad|iphone/i);
+    }
+
+    function createTextArea(text) {
+        textArea = document.createElement('textArea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+    }
+
+    function selectText() {
+        var range,
+            selection;
+
+        if (isOS()) {
+            range = document.createRange();
+            range.selectNodeContents(textArea);
+            selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            textArea.setSelectionRange(0, 999999);
+        } else {
+            textArea.select();
+        }
+    }
+
+    function copyToClipboard() {        
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+    }
+
+    copy = function(text) {
+        createTextArea(text);
+        selectText();
+        copyToClipboard();
+    };
+
+    return {
+        copy: copy
+    };
+})(window, document, navigator);
+
+function getLink() {
+    var player = document.getElementById('player');
+    var uri = window.location.href.split("#")[0] + "#" + Math.floor(player.currentTime * 10);
+    clipboard.copy(uri);
+    alert("Link copied to clipboard");
+    hideDrop();
+}
+
+function onAutoScroll() {
+    autoScroll = !autoScroll;
+    if (autoScroll) {
+        document.getElementById('auto_scroll').className = "util sel";
+    } else {
+        document.getElementById('auto_scroll').className = "util nosel";
+    }
+}
+
+function onClickToJump() {
+    jumpOnClick = !jumpOnClick;
+    if (jumpOnClick) {
+        document.getElementById('click_to_jump').className = "util sel";
+    } else {
+        document.getElementById('click_to_jump').className = "util nosel";
+    }
+}
+
+function setSpeed(val, target) {
+    var player = document.getElementById('player');
+    player.playbackRate = val;
+    var other = ['0_5', '1_0', '1_25', '1_5', '1_75', '2_0'];
+    for (var i = 0; i < other.length; i++) {
+        var sel = document.getElementById('speed_' + other[i]);
+        if (other[i] == target) {
+            sel.className = "util sel";
+        } else {
+            sel.className = "util nosel";
+        }
+    }
+}
+
+function setSize(val, target) {
+    var perc = document.documentElement.scrollTop / document.documentElement.scrollHeight;
+    document.documentElement.style.setProperty("--content-size", val + "%");
+    document.documentElement.scrollTop = document.documentElement.scrollHeight * perc;
+    var other = ['100', '125', '150', '200'];
+    for (var i = 0; i < other.length; i++) {
+        var sel = document.getElementById('size_' + other[i]);
+        if (other[i] == target) {
+            sel.className = "util sel";
+        } else {
+            sel.className = "util nosel";
+        }
+    }
+}
+
+function playerLoaded() {
+    if (playerLeftToLoad > 0) {
+        playerLeftToLoad--;
+    }
+
+    if (playerLeftToLoad == 0) {
+        playerLeftToLoad = -1;
+
+        var player = document.getElementById('player');
+        var dur = player.duration;
+        document.getElementById("pos").max = dur * 10;
+
+        paras.forEach(e => {
+            e.start = e.at / dur;
+            e.end = e.atEnd / dur;
+        });
+
+        parasReady = true;
+        posChanging();
+
+        if (player.newTarget !== null) {
+            var temp = player.newTarget;
+            player.newTarget = null;
+            move(temp);
+        }
+    }
+}
+
+function turnOnWakeLock() {
+    if ('wakeLock' in navigator) {
+        if (requestWakeLock !== null && wakeLock === null && document.visibilityState === 'visible') {
+            requestWakeLock();
+        }
+    }
+}
+
+function turnOffWakeLock() {
+    if ('wakeLock' in navigator) {
+        if (wakeLock !== null) {
+            wakeLock.release().then(() => {
+                wakeLock = null;
+            });
+        }
+    }
+}
+
+function setupWakeLock() {
+    if ('wakeLock' in navigator) {
+        requestWakeLock = async () => {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+            } catch (err) { }
+        };
+        const handleVisibilityChange = () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                requestWakeLock();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function(event) {
+    var player = document.getElementById('player');
+    player.newTarget = null;
+
+    var setPos = true;
+    if (setPos) {
+        try {
+            var temp = window.location.hash;
+            if (temp.length > 1) {
+                temp = parseFloat(temp.substring(1)) / 10;
+                player.getElementsByTagName("source")[0].src += "#t=" + temp;
+                setPos = false;
+            }
+        } catch (e) { }
+    }
+    if (setPos) {
+        try {
+            var tempID = window.localStorage.getItem('wordID');
+            var tempPos = window.localStorage.getItem('pos');
+            if (tempID == wordID) {
+                tempPos = parseFloat(tempPos);
+                tempPos -= 5;
+                if (tempPos > 0) {
+                    player.getElementsByTagName("source")[0].src += "#t=" + tempPos;
+                    setPos = false;
+                }
+            }
+        } catch (e) { }
+    }
+
+    player.addEventListener("loadedmetadata", function() {
+        playerLoaded();
+    });
+    player.addEventListener("loadeddata", function() {
+        playerLoaded();
+    });
+    player.addEventListener("timeupdate", function () {
+        var at = player.currentTime;
+        if (player.paused == playerIsPlaying) {
+            player.dispatchEvent(new CustomEvent(player.paused ? 'pause' : 'play'));
+        }
+        if (!isUserMoving) {
+            document.getElementById("pos").value = at * 10;
+            posChanging();
+        }
+        var lastElem = null;
+        if (lastHighlighted !== null) {
+            if (at >= lastHighlighted.at && at < lastHighlighted.atEnd) {
+                lastElem = lastHighlighted;
+            } else if (lastHighlighted.hasOwnProperty("next")) {
+                if (at >= lastHighlighted.next.at && at < lastHighlighted.next.atEnd) {
+                    lastElem = lastHighlighted.next;
+                }
+            }
+        }
+        if (lastElem === null) {
+            lastElem = bisect(byTime, e => e.at <= at, false);
+        }
+        if (lastElem !== null && lastElem != lastHighlighted) {
+            if (at >= 60) {
+                window.localStorage.setItem('wordID', wordID);
+                window.localStorage.setItem('pos', at);
+            }
+            lastElem.className = 'current';
+            if (lastHighlighted !== null) {
+                lastHighlighted.className = 'word';
+            }
+            if (lastHighlighted === null || lastHighlighted.para !== lastElem.para) {
+                if (lastHighlighted !== null) {
+                    lastHighlighted.para.className = '';
+                }
+                lastElem.para.className = "current";
+                if (autoScroll) {
+                    lastElem.para.scrollIntoView({"block": "nearest"});
+                }
+            }
+            lastHighlighted = lastElem;
+        }
+    }, false);
+
+    player.addEventListener('play', function () {
+        if ((new Date().getTime()) > hideAnimation) {
+            document.getElementById("circle").className.baseVal = "circlePause";
+            document.getElementById("from_play_to_pause").beginElement();
+            playerIsPlaying = true;
+            turnOnWakeLock();
+        }
+    });
+
+    player.addEventListener('pause', function () {
+        if ((new Date().getTime()) > hideAnimation) {
+            document.getElementById("circle").className.baseVal = "circlePlay";
+            document.getElementById("from_pause_to_play").beginElement();
+            playerIsPlaying = false;
+            turnOffWakeLock();
+        }
+    });
+
+    var children = [];
+    var lastPara = null;
+    var lastAt = null;
+    var lastHeader = 0;
+    for (var i = 0; i < words.length; i += 2) {
+        var at = words[i], word = words[i+1];
+        at += lastAt;
+        lastAt = at;
+        at /= 100;
+        if (word == -1) {
+            lastPara = document.createElement("p");
+            lastPara.at = at;
+            lastPara.atEnd = at;
+            var temp = document.createElement("span");
+            temp.className = "timecode";
+            temp.appendChild(document.createTextNode(getTick(at) + ":"));
+            lastPara.appendChild(temp);
+            children.push(lastPara);
+            paras.push(lastPara);
+        } else {
+            lastPara.appendChild(document.createTextNode(' '));
+            lastPara.atEnd = at;
+
+            var temp = document.createElement("span");
+
+            if (byTime.length > 0) {
+                byTime[byTime.length - 1].atEnd = at;
+                byTime[byTime.length - 1].next = temp;
+            }
+
+            temp.at = at;
+            temp.onclick = move;
+            temp.className = "word";
+            temp.appendChild(document.createTextNode(word));
+            temp.para = lastPara;
+            lastPara.appendChild(temp);
+
+            byTime.push(temp);
+        }
+    };
+    if (byTime.length > 0) {
+        byTime[byTime.length - 1].atEnd = at + 3600;
+    }
+    document.getElementById("pos").max = (lastAt/100) * 10;
+    document.getElementById("transcript").append(...children);
+
+    var hidden;
+    var visibilityChange;
+    if (typeof document.hidden !== "undefined") {
+        hidden = "hidden";
+        visibilityChange = "visibilitychange";
+    } else if (typeof document.msHidden !== "undefined") {
+        hidden = "msHidden";
+        visibilityChange = "msvisibilitychange";
+    } else if (typeof document.webkitHidden !== "undefined") {
+        hidden = "webkitHidden";
+        visibilityChange = "webkitvisibilitychange";
+    }
+
+    function pageAwake() {
+        if (lastHighlighted !== null && autoScroll) {
+            lastHighlighted.para.scrollIntoView({"block": "nearest"});
+        }
+    }
+    document.addEventListener(visibilityChange, () => { 
+        if (!document[hidden]) {
+            pageAwake();
+        }
+    });
+    document.addEventListener('pageshow', pageAwake);
+    document.addEventListener('focus', pageAwake);
+    document.addEventListener('scroll', updateScrolls);
+    setupWakeLock();
+});
+</script>
+</head>
+<body>
+
+<div class="rows header">
+    <svg class="play" width="50" height="50" id="btnPlay" viewBox="-2 -2 108 108" onclick="play()">
+        <circle class="circlePlay" id="circle" cx="51" cy="51" r="50" stroke-dasharray="314" stroke-dashoffset="0" style="stroke-width:5px;stroke:#bbf;" />
+        <line id='line1' x1="38" y1="30" x2="38" y2="70" style="stroke-width:8px;stroke:#bbf;stroke-linecap:round;" />
+        <path id='line2' d="M 38 30 L 70 50 L 38 70" rx="10" ry="10" style="stroke-width:8px;stroke:#bbf;fill:#bbf;stroke-linejoin:round;stroke-linecap:round;">
+            <animate attributeName="d" dur="250ms" from="M 38 30 L 70 50 L 38 70" to="M 66 30 L 66 50 L 66 70" fill="freeze" id="from_play_to_pause" begin="indefinite"/>
+        </path>
+        <animate xlink:href="#line2" attributeName="d" dur="250ms" from="M 66 30 L 66 50 L 66 70" to="M 38 30 L 70 50 L 38 70" begin="indefinite" fill="freeze" id="from_pause_to_play"/>
+    </svg>
+    <input class="slider fill" type="range" min="0" max="1000" value="0" id="pos" onchange="posChange()" oninput="posChanging()" onmousedown="posMoving()" onmouseup="posMoved()">
+    <span id="posText">0:00:00<br><font size="-1">-0:00:00</font></span>
+    <span class="link">
+        <svg fill="#bbf" stle="width:50px" viewBox="-5 -5 70 70" width="24" height="24" onclick="showLinks()" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd">
+            <g transform="matrix(1,0,0,1,-1088,-192)">
+                <g>
+                    <g transform="matrix(1.50868,0,0,1.01217,70.647,191.772)">
+                        <g transform="matrix(0.149202,0,0,0.173437,664.206,42.142)">
+                            <rect x="103.288" y="8.535" width="71.218" height="34.133" style="fill-rule:nonzero;"/>
+                        </g>
+                        <g transform="matrix(0.149202,0,0,0.173437,664.345,27.4)">
+                            <rect x="103.288" y="8.535" width="141.366" height="34.133" style="fill-rule:nonzero;"/>
+                        </g>
+                        <g transform="matrix(0.149202,0,0,0.173437,664.345,12.658)">
+                            <rect x="103.288" y="8.535" width="212.447" height="34.133" style="fill-rule:nonzero;"/>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </svg>
+    </span>
+</div>
+
+<div class="content" id="transcript"></div>
+<div class="overlay hidden" id="overlay" onclick="hideDrop()"></div>
+<div class="dropdown hidden" id="dropdown">
+    <span class="util" onclick="getLink();">Copy link...</span>
+    <span class="util" onclick="selectPos()" title="Ctrl-S">Set position...</span>
+    Options:<br>
+    <div style="padding-left: 1em;">
+        <span class="util sel" id="click_to_jump" onclick="onClickToJump()">Jump on click</span>
+        <span class="util sel" id="auto_scroll" onclick="onAutoScroll()">Auto scroll</span>
+    </div>
+    Playback speed:<br>
+    <div style="padding-left: 1em;">
+        <span class="util nosel" id="speed_0_5" onclick="setSpeed(1, '0_5')">0.50x</span>
+        <span class="util sel" id="speed_1_0" onclick="setSpeed(1, '1_0')">1.00x</span>
+        <span class="util nosel" id="speed_1_25" onclick="setSpeed(1.25, '1_25')">1.25x</span>
+        <span class="util nosel" id="speed_1_5" onclick="setSpeed(1.5, '1_5')">1.50x</span>
+        <span class="util nosel" id="speed_1_75" onclick="setSpeed(1.75, '1_75')">1.75x</span>
+        <span class="util nosel" id="speed_2_0" onclick="setSpeed(2, '2_0')">2.00x</span>
+    </div>
+    Font size:<br>
+    <div style="padding-left: 1em;">
+        <span class="util sel" id="size_100" onclick="setSize(100, '100')">100%</span>
+        <span class="util nosel" id="size_125" onclick="setSize(125, '125')">125%</span>
+        <span class="util nosel" id="size_150" onclick="setSize(150, '150')">150%</span>
+        <span class="util nosel" id="size_200" onclick="setSize(200, '200')">200%</span>
+    </div>
+</div>
+
+<audio id="player" preload="metadata"><source x_src_data="start" src="{{MP3_NAME}}" x_src_data="end"></audio>
+
+</body>
+</html>

@@ -1,5 +1,6 @@
 {
-    "source_mp3": "International_Space_Station.mp3",
+    "source_mp3": "examples/International_Space_Station.mp3",
+    "target_fn": "examples/Example-Results-AWS-Transcribe.html",
     "engine": "aws-transcribe",
     "engine_details": {
         "aws_access_key_id": "",
