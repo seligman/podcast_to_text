@@ -10,11 +10,13 @@ import templater
 ENGINES = {}
 import engines.transcribe
 import engines.whisper
+import engines.whisper_cpp
 def setup_engines():
     # Validate the engines implemenet the expected functions
     to_setup = [
         engines.transcribe,
         engines.whisper,
+        engines.whisper_cpp,
     ]
     expected = [
         ('get_id', 'Get an unique ID for this engine'),
