@@ -1,0 +1,8 @@
+{
+    "source_mp3": "examples/International_Space_Station.mp3",
+    "target_fn": "examples/Example-Results-Whisper-Large.html",
+    "engine": "whisper",
+    "engine_details": {
+        "model": "large"
+    }
+}
