@@ -5,6 +5,8 @@
     "engine_details": {
         "whisper.cpp": "C:\\Code\\WhisperCPP\\main.exe",
         "ffmpeg": "C:\\Code\\WhisperCPP\\ffmpeg.exe",
-        "model": "C:\\Code\\WhisperCPP\\ggml-tiny.bin"
+        "model": "C:\\Code\\WhisperCPP\\ggml-tiny.bin",
+        "threads": "",
+        "processors": ""
     }
 }
