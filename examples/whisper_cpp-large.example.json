@@ -6,7 +6,7 @@
         "whisper.cpp": "C:\\Code\\WhisperCPP\\main.exe",
         "ffmpeg": "C:\\Code\\WhisperCPP\\ffmpeg.exe",
         "model": "C:\\Code\\WhisperCPP\\ggml-large.bin",
-        "threads": "10",
+        "threads": "",
         "processors": ""
     }
 }
