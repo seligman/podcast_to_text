@@ -19,3 +19,7 @@ def show_progress(block_count, block_size, file_size):
 urlretrieve(url, fn, show_progress)
 print(" " * len(msg) + "\r", end="", flush=True)
 print(f"Downloaded {fn}")
+
+print("Use a command like the following to create a down-sampled version:")
+cmd = f"ffmpeg -i {fn} -acodec libmp3lame -ab 48k -ar 48000 -ac 1 {fn}-small.mp3"
+print(cmd)
