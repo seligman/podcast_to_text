@@ -68,30 +68,19 @@ def fill_out(words, mp3_fn):
         # There's a space in at least on word, so pass it off to our helper to split up
         words = split_phrases(words)
 
-    # Combine clusters together so the read along indicator has a hope of keeping up
+    # Create a dump out of final data to send to the webpage, the webpage itself
+    # will merge these to try to prevent too much animated noise
     merged = []
     for word, start, end in words:
         if start > end:
             start, end = end, start
         if len(word) > 0:
-            new_group = False
-            if len(merged) == 0:
-                new_group = True
-            elif merged[-1]['word'][-1] in ".?!":
-                new_group = True
-            elif merged[-1]['end'] - merged[-1]['start'] >= 0.5:
-                new_group = True
-            
-            if new_group:
-                merged.append({
-                    "first": len(merged) == 0,
-                    "word": word,
-                    "start": start,
-                    "end": end,
-                })
-            else:
-                merged[-1]["word"] += " " + word
-                merged[-1]["end"] = end
+            merged.append({
+                "first": len(merged) == 0,
+                "word": word,
+                "start": start,
+                "end": end,
+            })
 
     # And now simplify the list of words and find "paragraph" breaks
     final = []

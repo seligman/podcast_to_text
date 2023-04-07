@@ -135,10 +135,11 @@ body {
 
 span.current {
     color:#fff;
-    background:#a11;
-    box-shadow:3px 0 0 #a11, -3px 0 0 #a11;
-    border-radius: 5px;
+    background:#833;
     cursor: pointer;
+    padding: 2px 3px 2px 3px;
+    margin: -2px -3px -2px -3px;
+    scroll-margin: 2.5em 0;
 }
 
 span.word {
@@ -198,8 +199,7 @@ p.current {
 }
 
 .slider {
-    -webkit-appearance: none;
-    -moz-appearance: none;
+    appearance: none;
     height: 15px;
     margin: 10px;
     border-radius: 5px;  
@@ -208,7 +208,6 @@ p.current {
 }
 
 .slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
     appearance: none;
     width: 26px;
     height: 26px;
@@ -297,7 +296,7 @@ document.addEventListener('keydown', e => {
         }
         if ((e.code === 'ArrowUp') || (e.code === 'ArrowDown')) {
             e.preventDefault();
-            var temp = e.code === 'ArrowUp' ? lastHighlighted.para.previousSibling : lastHighlighted.para.nextSibling;
+            var temp = e.code === 'ArrowUp' ? lastHighlighted[0].para.previousSibling : lastHighlighted[0].para.nextSibling;
             if (temp !== null) {
                 temp = temp.childNodes;
                 for (var i = 0; i < temp.length; i++) {
@@ -311,8 +310,8 @@ document.addEventListener('keydown', e => {
         }
         if ((e.code === 'ArrowLeft') || (e.code === 'ArrowRight')) {
             e.preventDefault();
-            var word = e.code === 'ArrowLeft' ? lastHighlighted.previousSibling : lastHighlighted.nextSibling;
-            var line = lastHighlighted.para;
+            var word = e.code === 'ArrowLeft' ? lastHighlighted[0].previousSibling : lastHighlighted[0].nextSibling;
+            var line = lastHighlighted[0].para;
             while (line !== null) {
                 while (word !== null) {
                     if (word.hasOwnProperty('at')) {
@@ -722,40 +721,72 @@ document.addEventListener("DOMContentLoaded", function(event) {
             posChanging();
         }
         var lastElem = null;
+        var highlightTime = 1.0 * player.playbackRate;
+
         if (lastHighlighted !== null) {
-            if (at >= lastHighlighted.at && at < lastHighlighted.atEnd) {
-                lastElem = lastHighlighted;
-            } else if (lastHighlighted.hasOwnProperty("next")) {
-                if (at >= lastHighlighted.next.at && at < lastHighlighted.next.atEnd) {
-                    lastElem = lastHighlighted.next;
+            if (at >= lastHighlighted[0].at && at < lastHighlighted[lastHighlighted.length-1].atEnd) {
+                lastElem = lastHighlighted[0];
+            } else if (lastHighlighted[lastHighlighted.length-1].hasOwnProperty("next")) {
+                var started = lastHighlighted[lastHighlighted.length-1].next;
+                var ended = started;
+
+                while (true) {
+                    if (at >= started.at && at < ended.atEnd) {
+                        lastElem = started;
+                        break;
+                    }
+                    if (ended.atEnd - started.at > highlightTime) {
+                        break;
+                    }
+                    if (ended.hasOwnProperty("next")) {
+                        ended = ended.next;
+                    } else {
+                        break;
+                    }
                 }
             }
         }
         if (lastElem === null) {
             lastElem = bisect(byTime, e => e.at <= at, false);
         }
-        if (lastElem !== null && lastElem != lastHighlighted) {
+
+        var isIn = false;
+        if (lastElem !== null && lastHighlighted !== null) {
+            lastHighlighted.forEach((e) => {
+                if (e === lastElem) {
+                    isIn = true;
+                }
+            });
+        }
+        if (lastElem !== null && lastHighlighted === null || (lastHighlighted !== null && !isIn)) {
             if (at >= 60) {
                 window.localStorage.setItem('wordID', wordID);
                 window.localStorage.setItem('pos', at);
             }
+            var stack = [lastElem];
+            lastElem.className = 'current';
+            while ((stack[stack.length-1].atEnd - stack[0].at) <= highlightTime && stack[stack.length-1].hasOwnProperty("next")) {
+                stack[stack.length-1].next.className = 'current';
+                stack.push(stack[stack.length-1].next);
+            }
             if (autoScroll) {
-                lastElem.scrollIntoView({
+                stack[stack.length-1].scrollIntoView({
                     "block": "nearest",
                     "behavior": "smooth",
                 });
             }
-            lastElem.className = 'current';
             if (lastHighlighted !== null) {
-                lastHighlighted.className = 'word';
+                lastHighlighted.forEach((e) => {
+                    e.className = 'word';
+                });
             }
-            if (lastHighlighted === null || lastHighlighted.para !== lastElem.para) {
+            if (lastHighlighted === null || lastHighlighted[0].para !== lastElem.para) {
                 if (lastHighlighted !== null) {
-                    lastHighlighted.para.className = '';
+                    lastHighlighted[0].para.className = '';
                 }
                 lastElem.para.className = "current";
             }
-            lastHighlighted = lastElem;
+            lastHighlighted = stack;
         }
     }, false);
 
@@ -903,7 +934,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     </div>
     Playback speed:<br>
     <div style="padding-left: 1em;">
-        <span class="util nosel" id="speed_0_5" onclick="setSpeed(1, '0_5')">0.50x</span>
+        <span class="util nosel" id="speed_0_5" onclick="setSpeed(0.5, '0_5')">0.50x</span>
         <span class="util sel" id="speed_1_0" onclick="setSpeed(1, '1_0')">1.00x</span>
         <span class="util nosel" id="speed_1_25" onclick="setSpeed(1.25, '1_25')">1.25x</span>
         <span class="util nosel" id="speed_1_5" onclick="setSpeed(1.5, '1_5')">1.50x</span>
