@@ -137,9 +137,17 @@ span.current {
     color:#fff;
     background:#833;
     cursor: pointer;
-    padding: 2px 3px 2px 3px;
-    margin: -2px -3px -2px -3px;
     scroll-margin: 2.5em 0;
+}
+
+span.left {
+    margin-left: -5px;
+    padding-left: 5px;
+    border-radius: 3px 0 0 3px;
+}
+
+span.right {
+    border-radius: 0 3px 3px 0;
 }
 
 span.word {
@@ -769,6 +777,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 stack[stack.length-1].next.className = 'current';
                 stack.push(stack[stack.length-1].next);
             }
+            if (stack.length == 1) {
+                stack[0].className = 'current left right';
+            } else {
+                stack[0].className = 'current left';
+                stack[stack.length - 1].className = 'current right';
+            }
             if (autoScroll) {
                 stack[stack.length-1].scrollIntoView({
                     "block": "nearest",
@@ -778,14 +792,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (lastHighlighted !== null) {
                 lastHighlighted.forEach((e) => {
                     e.className = 'word';
+                    e.para.className = '';
                 });
             }
-            if (lastHighlighted === null || lastHighlighted[0].para !== lastElem.para) {
-                if (lastHighlighted !== null) {
-                    lastHighlighted[0].para.className = '';
-                }
-                lastElem.para.className = "current";
-            }
+            stack.forEach((e) => {
+                e.para.className = 'current';
+            });
             lastHighlighted = stack;
         }
     }, false);
@@ -828,7 +840,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             children.push(lastPara);
             paras.push(lastPara);
         } else {
-            lastPara.appendChild(document.createTextNode(' '));
+            lastPara.children[lastPara.children.length-1].textContent += ' ';
             lastPara.atEnd = at;
 
             var temp = document.createElement("span");
@@ -844,7 +856,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
             temp.appendChild(document.createTextNode(word));
             temp.para = lastPara;
             lastPara.appendChild(temp);
-
             byTime.push(temp);
         }
     };
