@@ -137,7 +137,7 @@ span.current {
     color:#fff;
     background:#833;
     cursor: pointer;
-    scroll-margin: 2.5em 0;
+    scroll-margin: calc(1.5em + 62px) 0 2.5em 0;
 }
 
 span.left {
@@ -172,11 +172,17 @@ p.current {
 }
 
 @media only screen and (max-width: 600px) {
+    :root {
+        --extra_height: 1.3;
+    }
+    span.current {
+        scroll-margin: calc(1.5em + (62px * var(--extra_height))) 0 2.5em 0;
+    }
     .header {
-        height: calc(WIDGET_HEIGHTpx * 1.3);
+        height: calc(62px * var(--extra_height));
     }
     .content {
-        padding-top: calc(60px * 1.3);
+        padding-top: calc(60px * var(--extra_height));
     }
     .play {
         transform: scale(1.9);
