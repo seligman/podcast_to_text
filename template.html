@@ -689,6 +689,12 @@ function setupWakeLock() {
     }
 }
 
+function windowBlur() {
+    if (document.getElementById("dropdown").className == "dropdown showDrop") {
+        hideDrop();
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function(event) {
     var player = document.getElementById('player');
     player.newTarget = null;
@@ -901,6 +907,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     document.addEventListener('pageshow', pageAwake);
     document.addEventListener('focus', pageAwake);
     document.addEventListener('scroll', updateScrolls);
+    window.addEventListener('blur', windowBlur);
     setupWakeLock();
 });
 </script>
