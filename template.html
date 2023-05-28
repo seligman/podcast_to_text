@@ -310,7 +310,7 @@ document.addEventListener('keydown', e => {
         }
         if ((e.code === 'ArrowUp') || (e.code === 'ArrowDown')) {
             e.preventDefault();
-            var temp = e.code === 'ArrowUp' ? lastHighlighted[0].para.previousSibling : lastHighlighted[0].para.nextSibling;
+            var temp = e.code === 'ArrowUp' ? lastHighlighted[0].para.previousSibling : lastHighlighted[lastHighlighted.length-1].para.nextSibling;
             if (temp !== null) {
                 temp = temp.childNodes;
                 for (var i = 0; i < temp.length; i++) {
@@ -324,7 +324,7 @@ document.addEventListener('keydown', e => {
         }
         if ((e.code === 'ArrowLeft') || (e.code === 'ArrowRight')) {
             e.preventDefault();
-            var word = e.code === 'ArrowLeft' ? lastHighlighted[0].previousSibling : lastHighlighted[0].nextSibling;
+            var word = e.code === 'ArrowLeft' ? lastHighlighted[0].previousSibling : lastHighlighted[lastHighlighted.length-1].nextSibling;
             var line = lastHighlighted[0].para;
             while (line !== null) {
                 while (word !== null) {
@@ -449,24 +449,16 @@ function updateScrolls() {
             view = 2;
         }
 
-        loc = 'calc((100% - 26px) * '+loc+' + 13px)';
-        pageStart = 'calc((100% - 26px) * '+pageStart+' + 13px)';
-        pageEnd = 'calc((100% - 26px) * '+pageEnd+' + 13px)';
+        loc = `calc((100% - 26px) * ${loc} + 13px)`;
+        pageStart = `calc((100% - 26px) * ${pageStart} + 13px)`;
+        pageEnd = `calc((100% - 26px) * ${pageEnd} + 13px)`;
         var temp = '';
         if (view == 1) {
-            temp = ','+done+' 0% '+pageStart+
-                ','+page+' '+pageStart+' '+pageEnd+
-                ','+done+' '+pageStart+' '+loc+
-                ','+togo+' '+loc+' '+'100%';
+            temp = `,${done} 0% ${pageStart},${page} ${pageStart} ${pageEnd},${done} ${pageStart} ${loc},${togo} ${loc} 100%`;
         } else if (view == 2) {
-            temp = ','+done+' 0% '+loc+
-                ','+togo+' '+loc+' '+pageStart+
-                ','+page+' '+pageStart+' '+pageEnd+
-                ','+togo+' '+pageEnd+' 100%';
+            temp = `,${done} 0% ${loc},${togo} ${loc} ${pageStart},${page} ${pageStart} ${pageEnd},${togo} ${pageEnd} 100%`;
         } else {
-            temp = ','+done+' 0% '+pageStart+
-                ','+page+' '+pageStart+' '+pageEnd+
-                ','+togo+' '+pageEnd+' '+'100%';
+            temp = `,${done} 0% ${pageStart},${page} ${pageStart} ${pageEnd},${togo} ${pageEnd} 100%`;
         }
         pos.style.background = 'linear-gradient(to right' + temp + ')';
     }
@@ -896,7 +888,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
             turnOnWakeLock();
         }
         if (lastHighlighted !== null && autoScroll) {
-            lastHighlighted.para.scrollIntoView({"block": "nearest"});
+            lastHighlighted.scrollIntoView({
+                "block": "nearest",
+                "behavior": "smooth",
+            });
         }
     }
     document.addEventListener(visibilityChange, () => { 
