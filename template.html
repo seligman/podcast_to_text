@@ -330,35 +330,21 @@ document.addEventListener('keydown', e => {
         }
         if ((e.code === 'ArrowLeft') || (e.code === 'ArrowRight')) {
             e.preventDefault();
-            var line = null;
-            var word = null;
-            if (line === null && lastHighlighted !== null) {
-                word = e.code === 'ArrowLeft' ? lastHighlighted[0].previousSibling : lastHighlighted[lastHighlighted.length-1].nextSibling;
-                line = lastHighlighted[0].para;
-            }
-            if (line == null && parasReady) {
-                line = paras[0];
+            if (lastHighlighted === null) {
+                var line = paras[0];
                 var temp = line.childNodes;
                 for (var i = 0; i < temp.length; i++) {
                     if (temp[i].hasOwnProperty('at')) {
-                        word = temp[i];
-                        break;
+                        var word = temp[i];
+                        document.getElementById('player').currentTime = (word.at + word.atEnd) / 2;
+                        break
                     }
                 }
-            }
-            if (line !== null && word !== null) {
-                while (line !== null) {
-                    while (word !== null) {
-                        if (word.hasOwnProperty('at')) {
-                            document.getElementById('player').currentTime = (word.at + word.atEnd) / 2;
-                            return true;
-                        }
-                        word = e.code === 'ArrowLeft' ? word.previousSibling : word.nextSibling;
-                    }
-                    line = e.code === 'ArrowLeft' ? line.previousSibling : line.nextSibling;
-                    if (line !== null) {
-                        word = line.childNodes[e.code === 'ArrowLeft' ? line.childNodes.length - 1 : 0];
-                    }
+            } else {
+                if (e.code === 'ArrowLeft') {
+                    document.getElementById('player').currentTime = lastHighlighted[0].at - (1.0 * player.playbackRate);
+                } else {
+                    document.getElementById('player').currentTime = lastHighlighted[lastHighlighted.length-1].atEnd + 0.1;
                 }
             }
             return true;
