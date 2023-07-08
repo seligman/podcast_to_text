@@ -607,7 +607,7 @@ function onClickToJump() {
 function setSpeed(val, target) {
     var player = document.getElementById('player');
     player.playbackRate = val;
-    var other = ['0_5', '1_0', '1_25', '1_5', '1_75', '2_0'];
+    var other = ['0_5', '1_0', '1_25', '1_5', '1_75', '2_0', '2_5', '3_0'];
     for (var i = 0; i < other.length; i++) {
         var sel = document.getElementById('speed_' + other[i]);
         if (other[i] == target) {
@@ -967,6 +967,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         <span class="util nosel" id="speed_1_5" onclick="setSpeed(1.5, '1_5')">1.50x</span>
         <span class="util nosel" id="speed_1_75" onclick="setSpeed(1.75, '1_75')">1.75x</span>
         <span class="util nosel" id="speed_2_0" onclick="setSpeed(2, '2_0')">2.00x</span>
+        <span class="util nosel" id="speed_2_5" onclick="setSpeed(2.5, '2_5')">2.50x</span>
+        <span class="util nosel" id="speed_3_0" onclick="setSpeed(3, '3_0')">3.00x</span>
     </div>
     Font size:<br>
     <div style="padding-left: 1em;">
