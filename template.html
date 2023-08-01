@@ -26,6 +26,7 @@ body {
 
 .overlay {
     position:fixed;
+    background-color: rgba(0, 0, 0, .25);
     top:0;
     left:0;
     width:100%;
@@ -257,6 +258,32 @@ p.current {
 	transition: stroke-dashoffset 250ms ease-in-out;
 	stroke-dashoffset: 314;
 }
+
+input[type=button],input[type=submit],input[type=reset] {
+    background-color: #444;
+    border: none;
+    color: #f8f8f2;
+    padding: 2pt 20pt;
+    text-decoration: none;
+    cursor: pointer;
+    font-family: Menlo,Monaco,Consolas,monospace;
+    font-size: 12pt;
+}
+
+input[type="text"],input[type="number"],textarea {
+    background-color: #000;
+    color: #cec;
+    font-family: Menlo,Monaco,Consolas,monospace;
+    font-size: 12pt;
+    margin: 3px;
+    border-top-style: hidden;
+    border-right-style: hidden;
+    border-left-style: hidden;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    border-bottom-color: #a8a8f2;
+    padding: 2px;
+}
 </style>
 <script>
 
@@ -303,56 +330,64 @@ function move(e) {
 
 document.addEventListener('keydown', e => {
     if (!e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
-        if (e.code === 'Space') {
-            e.preventDefault();
-            play();
-            return true;
-        }
-        if ((e.code === 'ArrowUp') || (e.code === 'ArrowDown')) {
-            e.preventDefault();
-            var temp = null;
-            if (temp === null && lastHighlighted !== null) {
-                temp = e.code === 'ArrowUp' ? lastHighlighted[0].para.previousSibling : lastHighlighted[lastHighlighted.length-1].para.nextSibling;
+        if (document.getElementById("overlay").className === "overlay hidden") {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                play();
+                return true;
             }
-            if (temp === null && parasReady) {
-                temp = paras[0];
-            }
-            if (temp !== null) {
-                temp = temp.childNodes;
-                for (var i = 0; i < temp.length; i++) {
-                    if (temp[i].hasOwnProperty('at')) {
-                        document.getElementById('player').currentTime = (temp[i].at + temp[i].at) / 2;
-                        return true;
+
+            if ((e.code === 'ArrowUp') || (e.code === 'ArrowDown')) {
+                e.preventDefault();
+                var temp = null;
+                if (temp === null && lastHighlighted !== null) {
+                    temp = e.code === 'ArrowUp' ? lastHighlighted[0].para.previousSibling : lastHighlighted[lastHighlighted.length-1].para.nextSibling;
+                }
+                if (temp === null && parasReady) {
+                    temp = paras[0];
+                }
+                if (temp !== null) {
+                    temp = temp.childNodes;
+                    for (var i = 0; i < temp.length; i++) {
+                        if (temp[i].hasOwnProperty('at')) {
+                            document.getElementById('player').currentTime = (temp[i].at + temp[i].at) / 2;
+                            return true;
+                        }
                     }
                 }
+                return true;
             }
-            return true;
-        }
-        if ((e.code === 'ArrowLeft') || (e.code === 'ArrowRight')) {
-            e.preventDefault();
-            if (lastHighlighted === null) {
-                var line = paras[0];
-                var temp = line.childNodes;
-                for (var i = 0; i < temp.length; i++) {
-                    if (temp[i].hasOwnProperty('at')) {
-                        var word = temp[i];
-                        document.getElementById('player').currentTime = (word.at + word.atEnd) / 2;
-                        break
+            if ((e.code === 'ArrowLeft') || (e.code === 'ArrowRight')) {
+                e.preventDefault();
+                if (lastHighlighted === null) {
+                    var line = paras[0];
+                    var temp = line.childNodes;
+                    for (var i = 0; i < temp.length; i++) {
+                        if (temp[i].hasOwnProperty('at')) {
+                            var word = temp[i];
+                            document.getElementById('player').currentTime = (word.at + word.atEnd) / 2;
+                            break
+                        }
                     }
-                }
-            } else {
-                if (e.code === 'ArrowLeft') {
-                    document.getElementById('player').currentTime = lastHighlighted[0].at - (1.0 * player.playbackRate);
                 } else {
-                    document.getElementById('player').currentTime = lastHighlighted[lastHighlighted.length-1].atEnd + 0.1;
+                    if (e.code === 'ArrowLeft') {
+                        document.getElementById('player').currentTime = lastHighlighted[0].at - (1.0 * player.playbackRate);
+                    } else {
+                        document.getElementById('player').currentTime = lastHighlighted[lastHighlighted.length-1].atEnd + 0.1;
+                    }
                 }
+                return true;
             }
-            return true;
+        } else {
+            if (e.code === 'Escape') {
+                hideDrop();
+                return true;
+            }
         }
     }
     if (e.key === 's' && !e.altKey && e.ctrlKey && !e.metaKey && !e.shiftKey) {
         e.preventDefault();
-        selectPos();
+        showPos();
         return true;
     }
 });
@@ -482,15 +517,21 @@ function hideDrop() {
     if (drop.className == "dropdown showDrop") {
         drop.className = "dropdown hideDrop";
     }
+    var setpos = document.getElementById("setpos");
+    if (setpos.className == "dropdown showDrop") {
+        setpos.className = "dropdown hideDrop";
+    }
     var overlay = document.getElementById("overlay");
     overlay.className = "overlay hidden";
 }
 
-function selectPos() {
+function posSelected(e) {
+    hideDrop();
+    e.preventDefault = true;
     var player = document.getElementById('player');
-    var newPos = prompt("Please enter an offset to skip to:", getTick(player.currentTime));
-    if (newPos.includes(":") || newPos.includes(".") || newPos.includes("-")) {
-        newPos = newPos.replace(/[.-]/g, ":");
+    var newPos = document.getElementById('enteredPos').value;
+    if (newPos.includes(":") || newPos.includes(".") || newPos.includes("-") || newPos.includes(",") || newPos.includes(" ")) {
+        newPos = newPos.replace(/[,. -]/g, ":");
         newPos = newPos.split(":");
         if (newPos.length == 3 || newPos.length == 2) {
             var h = parseInt(newPos.length == 3 ? newPos[0] : '0');
@@ -505,11 +546,14 @@ function selectPos() {
         }
     } else {
         var temp = parseFloat(newPos);
-        if (temp >= 0 && temp <= 43200) {
+        if (temp >= 0 && temp <= 60) {
+            move(temp * 60);
+        } else if (temp > 60 && temp <= 43200) {
             move(temp);
         }
     }
     hideDrop();
+    return false;
 }
 
 function showLinks() {
@@ -530,6 +574,29 @@ function showLinks() {
         var overlay = document.getElementById("overlay");
         overlay.className = "overlay";
     }
+}
+
+function showPos() {
+    var enteredPos = document.getElementById('enteredPos');
+    enteredPos.value = getTick(player.currentTime);
+    var setpos = document.getElementById("setpos");
+    if (!setpos.hasOwnProperty('eventSetup')) {
+        setpos.eventSetup = true;
+        setpos.addEventListener('animationend', (e) => {
+            if (setpos.className == "dropdown hideDrop") {
+                setpos.className = "dropdown hideDrop hidden";
+            }
+        });
+    }
+    var drop = document.getElementById("dropdown");
+    drop.className = "dropdown hideDrop hidden";
+
+    setpos.className = "dropdown showDrop";
+    var overlay = document.getElementById("overlay");
+    overlay.className = "overlay";
+
+    enteredPos.focus();
+    enteredPos.select();
 }
 
 var clipboard = (function(window, document, navigator) {
@@ -951,9 +1018,16 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
 <div class="content" id="transcript"></div>
 <div class="overlay hidden" id="overlay" onclick="hideDrop()"></div>
+<div class="dropdown hidden" id="setpos">
+    Set position:
+    <form action="" onsubmit="return posSelected(event);">
+        <input type="text" size="8" autocomplete="off" autocorrect="off" id="enteredPos" value="0:00:00">
+        <input type="submit" value="Jump">
+    </form>
+</div>
 <div class="dropdown hidden" id="dropdown">
     <span class="util" onclick="getLink();">Copy link...</span>
-    <span class="util" onclick="selectPos()" title="Ctrl-S">Set position...</span>
+    <span class="util" onclick="showPos()" title="Ctrl-S">Set position...</span>
     Options:<br>
     <div style="padding-left: 1em;">
         <span class="util sel" id="click_to_jump" onclick="onClickToJump()">Jump on click</span>
