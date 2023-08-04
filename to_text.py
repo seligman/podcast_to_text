@@ -3,17 +3,21 @@
 from command_opts import opt, main_entry
 from list_picker import list_picker
 import gzip
-import os
 import json
+import mp3_splitter
+import os
+import pickle
 import templater
 
 ENGINES = {}
+import engines.openai
 import engines.transcribe
 import engines.whisper
 import engines.whisper_cpp
 def setup_engines():
     # Validate the engines implemenet the expected functions
     to_setup = [
+        engines.openai,
         engines.transcribe,
         engines.whisper,
         engines.whisper_cpp,
@@ -22,6 +26,7 @@ def setup_engines():
         ('get_id', 'Get an unique ID for this engine'),
         ('get_name', 'Describe the engine'),
         ('get_opts', 'Get all available options for the engine'),
+        ('get_settings', 'Get model specific settings'),
         ('run_engine', 'Run the engine and transcribe audio'),
         ('parse_data', 'Parse the output of run_engine to a normalized format'),
     ]
@@ -67,17 +72,47 @@ def create_webpage(settings_file):
         settings = json.load(f)
 
     engine = ENGINES[settings["engine"]]
+    engine_settings = engine.get_settings()
     data_fn = settings_file + ".gz"
 
     if os.path.isfile(data_fn):
         with gzip.open(data_fn, "rb") as f:
             data = f.read()
     else:
-        data = engine.run_engine(settings["engine_details"], settings["source_mp3"])
+        if 'limit_seconds' in engine_settings or 'limit_bytes' in engine_settings:
+            temp = []
+            print("Creating seperate chunks...")
+            chunks = mp3_splitter.chunk_mp3(
+                settings["source_mp3"], 
+                duration_in_seconds=engine_settings.get('limit_seconds'),
+                size_in_bytes=engine_settings.get('limit_bytes'),
+            )
+            for chunk in chunks:
+                temp.append({
+                    "offset": chunk["offset"],
+                    "duration": chunk["duration"],
+                    "data": engine.run_engine(settings["engine_details"], chunk['fn']),
+                })
+                os.unlink(chunk['fn'])
+            data = b'CHUNKED' + pickle.dumps(temp)
+        else:
+            data = engine.run_engine(settings["engine_details"], settings["source_mp3"])
+
         with gzip.open(data_fn, "wb") as f:
             f.write(data)
 
-    data = engine.parse_data(data)
+    if data.startswith(b'CHUNKED'):
+        # For chunked data, parse each chunk in turn and offset the resulting data
+        temp = pickle.loads(data[7:])
+        data = []
+        for cur in temp:
+            chunk = engine.parse_data(cur['data'])
+            chunk = [(word, start + cur['offset'], end + cur['offset']) for word, start, end in chunk]
+            data.extend(chunk)
+    else:
+        # Non-chunked data, just read and parse it as is
+        data = engine.parse_data(data)
+
     data = templater.fill_out(data, settings['source_mp3'])
     if "target_fn" in settings:
         dest = settings["target_fn"]

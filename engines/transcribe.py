@@ -11,6 +11,11 @@ def get_name():
 def get_id():
     return "aws-transcribe"
 
+def get_settings():
+    return {
+        "limit_seconds": 14370, # Limit MP3 files to just shy of the AWS documented 4 hour limit
+    }
+
 def get_opts():
     return [
         ("aws_access_key_id", "AWS access key (leave blank to use profile/role)"),

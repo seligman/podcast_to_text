@@ -1,0 +1,8 @@
+{
+    "source_mp3": "examples/International_Space_Station.mp3",
+    "target_fn": "examples/Example-Results-OpenAI.html",
+    "engine": "openai",
+    "engine_details": {
+        "openai_api_key": ""
+    }
+}

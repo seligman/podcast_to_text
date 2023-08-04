@@ -8,6 +8,11 @@ def get_name():
 def get_id():
     return "whisper.cpp"
 
+def get_settings():
+    return {
+        "limit_seconds": 7200, # Limit MP3 files to about 2 hours to prevent overloading Whisper
+    }
+
 def get_opts():
     return [
         ("whisper.cpp", "Filename of whisper.cpp's main executable"),
