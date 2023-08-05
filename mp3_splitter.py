@@ -20,31 +20,50 @@ class ReadMP3:
                 skip = (skip[0] << 21) + (skip[1] << 14) + (skip[2] << 7) + skip[3]
                 self.f.read(skip)
             elif self.header[0] == 0xff and (self.header[1] >> 4) == 0xf:
-                self.mpeg_ver = {0: 2.5, 2: 2, 3: 1}[(self.header[1] >> 3) & 0x3]
-                self.layer = {1: 3, 2: 2, 3: 1}[(self.header[1] >> 1) & 0x3]
-                self.protection = self.header[1] & 0x1
-                bitrate_index = self.header[2] >> 4
-                self.bitrate = {
-                    (1, 1): [32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448],
-                    (1, 2): [32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384],
-                    (1, 3): [32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320],
-                    (2, 1): [32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256],
-                    (2, 2): [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
-                    (2, 3): [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
-                }[(self.mpeg_ver, self.layer)][bitrate_index - 1]
-                self.sample_rate = {
-                    1: [44100, 48000, 32000],
-                    2: [22050, 24000, 16000],
-                    2.5: [11025, 12000, 8000],
-                }[self.mpeg_ver][(self.header[2] >> 2) & 0x3]
-                self.padding = (self.header[2] >> 1) & 0x1
-                self.channel_mode = (self.header[3] >> 6) & 0x3
+                valid = True
+                if valid:
+                    self.mpeg_ver = {0: 2.5, 2: 2, 3: 1}[(self.header[1] >> 3) & 0x3]
+                    self.layer = {1: 3, 2: 2, 3: 1}[(self.header[1] >> 1) & 0x3]
+                    self.protection = self.header[1] & 0x1
+                    bitrate_index = self.header[2] >> 4
+                    bitrate = {
+                        (1, 1): [32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448],
+                        (1, 2): [32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384],
+                        (1, 3): [32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320],
+                        (2, 1): [32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256],
+                        (2, 2): [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+                        (2, 3): [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+                    }.get((self.mpeg_ver, self.layer))
+                    if bitrate is None:
+                        valid = False
+                if valid:
+                    if bitrate_index - 1 < len(bitrate):
+                        self.bitrate = bitrate[bitrate_index - 1]
+                    else:
+                        valid = False
+                if valid:
+                    sample_rate = {
+                        1: [44100, 48000, 32000],
+                        2: [22050, 24000, 16000],
+                        2.5: [11025, 12000, 8000],
+                    }.get(self.mpeg_ver)
+                    if sample_rate is None:
+                        valid = False
+                    else:
+                        i = (self.header[2] >> 2) & 0x3
+                        if 0 <= i < len(sample_rate):
+                            self.sample_rate = sample_rate[i]
+                        else:
+                            valid = False
+                if valid:
+                    self.padding = (self.header[2] >> 1) & 0x1
+                    self.channel_mode = (self.header[3] >> 6) & 0x3
 
-                self.padding_size = {1: 4, 2: 1, 3: 1}[self.layer]
-                self.samples_per_frame = {(1, 1): 384, (1, 2): 1152, (1, 3): 1152, (2, 1): 192, (2, 2): 1152, (2, 3): 576}[(self.mpeg_ver, self.layer)]
-                self.size = self.samples_per_frame // 8 * (self.bitrate * 1000) // self.sample_rate + (self.padding * self.padding_size)
-                self.data = self.f.read(self.size - 4)
-                return True
+                    self.padding_size = {1: 4, 2: 1, 3: 1}[self.layer]
+                    self.samples_per_frame = {(1, 1): 384, (1, 2): 1152, (1, 3): 1152, (2, 1): 192, (2, 2): 1152, (2, 3): 576}[(self.mpeg_ver, self.layer)]
+                    self.size = self.samples_per_frame // 8 * (self.bitrate * 1000) // self.sample_rate + (self.padding * self.padding_size)
+                    self.data = self.f.read(self.size - 4)
+                    return True
 
 def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None):
     ret = []
