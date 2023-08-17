@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import io
+import io, sys
 
 class ReadMP3:
     def __init__(self, f):
@@ -22,8 +22,14 @@ class ReadMP3:
             elif self.header[0] == 0xff and (self.header[1] >> 4) == 0xf:
                 valid = True
                 if valid:
-                    self.mpeg_ver = {0: 2.5, 2: 2, 3: 1}[(self.header[1] >> 3) & 0x3]
-                    self.layer = {1: 3, 2: 2, 3: 1}[(self.header[1] >> 1) & 0x3]
+                    self.mpeg_ver = {0: 2.5, 2: 2, 3: 1}.get((self.header[1] >> 3) & 0x3)
+                    if self.mpeg_ver is None:
+                        valid = False
+                if valid:
+                    self.layer = {1: 3, 2: 2, 3: 1}.get((self.header[1] >> 1) & 0x3)
+                    if self.layer is None:
+                        valid = False
+                if valid:
                     self.protection = self.header[1] & 0x1
                     bitrate_index = self.header[2] >> 4
                     bitrate = {
@@ -58,14 +64,13 @@ class ReadMP3:
                 if valid:
                     self.padding = (self.header[2] >> 1) & 0x1
                     self.channel_mode = (self.header[3] >> 6) & 0x3
-
                     self.padding_size = {1: 4, 2: 1, 3: 1}[self.layer]
                     self.samples_per_frame = {(1, 1): 384, (1, 2): 1152, (1, 3): 1152, (2, 1): 192, (2, 2): 1152, (2, 3): 576}[(self.mpeg_ver, self.layer)]
                     self.size = self.samples_per_frame // 8 * (self.bitrate * 1000) // self.sample_rate + (self.padding * self.padding_size)
                     self.data = self.f.read(self.size - 4)
                     return True
 
-def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None):
+def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None, allow_large_final_segment=False, fn_extra=""):
     ret = []
     cur_len = 0
     cur_buffer = io.BytesIO()
@@ -84,7 +89,8 @@ def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None):
                 ret.append({
                     'offset': chunk_at / mp3.sample_rate,
                     'duration': (offset - chunk_at) / mp3.sample_rate,
-                    'fn': fn + f"_chunk_{len(ret):04d}.mp3",
+                    'fn': f"{fn}{fn_extra}_chunk_{len(ret):04d}.mp3",
+                    'size': cur_buffer.tell(),
                 })
                 with open(ret[-1]['fn'], "wb") as f_dest:
                     cur_buffer.seek(0, 0)
@@ -98,16 +104,52 @@ def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None):
             offset += mp3.samples_per_frame
 
         if cur_len > 0:
-            ret.append({
-                'offset': chunk_at / mp3.sample_rate,
-                'duration': (offset - chunk_at) / mp3.sample_rate,
-                'fn': fn + f"_chunk_{len(ret):04d}.mp3",
-            })
-            with open(ret[-1]['fn'], "wb") as f_dest:
-                cur_buffer.seek(0, 0)
-                f_dest.write(cur_buffer.read())
+            append_to_previous = False
+            if duration_in_seconds is not None:
+                if allow_large_final_segment:
+                    if len(ret) > 0:
+                        if (cur_len / mp3.sample_rate) < (duration_in_seconds / 2):
+                            append_to_previous = True
+            if append_to_previous:
+                ret[-1]['duration'] += (offset - chunk_at) / mp3.sample_rate
+                ret[-1]['size'] += cur_buffer.tell()
+                with open(ret[-1]['fn'], "ab") as f_dest:
+                    cur_buffer.seek(0, 0)
+                    f_dest.write(cur_buffer.read())
+            else:
+                ret.append({
+                    'offset': chunk_at / mp3.sample_rate,
+                    'duration': (offset - chunk_at) / mp3.sample_rate,
+                    'fn': f"{fn}{fn_extra}_chunk_{len(ret):04d}.mp3",
+                    'size': cur_buffer.tell(),
+                })
+                with open(ret[-1]['fn'], "wb") as f_dest:
+                    cur_buffer.seek(0, 0)
+                    f_dest.write(cur_buffer.read())
 
     return ret
 
+def main():
+    if len(sys.argv) != 2:
+        print(f"Use '{sys.argv[0]} <fn>' to test running this on a single MP3")
+        exit(1)
+
+    fn = sys.argv[1]
+
+    print("Creating 5 minute chunks:")
+    chunks = chunk_mp3(fn, duration_in_seconds=300, fn_extra="_by_time")
+    for chunk in chunks:
+        print(f"Chunk: {chunk['fn']}, Offset: {chunk['offset']:.2f}, Duration: {chunk['duration']:.2f}, Size: {chunk['size']:,}")
+
+    print("Creating 5 minute chunks (allow larger last segment):")
+    chunks = chunk_mp3(fn, duration_in_seconds=300, fn_extra="_by_time_pad", allow_large_final_segment=True)
+    for chunk in chunks:
+        print(f"Chunk: {chunk['fn']}, Offset: {chunk['offset']:.2f}, Duration: {chunk['duration']:.2f}, Size: {chunk['size']:,}")
+
+    print("Creating 10 megabyte chunks:")
+    chunks = chunk_mp3(fn, size_in_bytes=10485760, fn_extra="_by_size")
+    for chunk in chunks:
+        print(f"Chunk: {chunk['fn']}, Offset: {chunk['offset']:.2f}, Duration: {chunk['duration']:.2f}, Size: {chunk['size']:,}")
+
 if __name__ == "__main__":
-    print("This module is not meant to be run directly.")
+    main()
