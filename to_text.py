@@ -14,6 +14,7 @@ import engines.openai
 import engines.transcribe
 import engines.whisper
 import engines.whisper_cpp
+import engines.whisper_timestamped
 def setup_engines():
     # Validate the engines implemenet the expected functions
     to_setup = [
@@ -21,6 +22,7 @@ def setup_engines():
         engines.transcribe,
         engines.whisper,
         engines.whisper_cpp,
+        engines.whisper_timestamped,
     ]
     expected = [
         ('get_id', 'Get an unique ID for this engine'),

@@ -8,7 +8,8 @@ Currently this is the early days, WIP as I migrate an internal tool that does a 
 
 Supported engines:
 
-* AWS Transcribe, [Sample output](https://seligman.github.io/podcast_to_text/Example-Results-AWS-Transcribe.html)
-* OpenAI Whisper API, [Sample output](https://seligman.github.io/podcast_to_text/Example-Results-OpenAI.html)
-* Whisper, Sample output, [Tiny](https://seligman.github.io/podcast_to_text/Example-Results-Whisper-Tiny.html), [Large](https://seligman.github.io/podcast_to_text/Example-Results-Whisper-Large.html) models
-* Whisper.cpp, Sample output, [Tiny](https://seligman.github.io/podcast_to_text/Example-Results-Whisper_CPP-Tiny.html), [Large](https://seligman.github.io/podcast_to_text/Example-Results-Whisper_CPP-Large.html) models
+* [AWS Transcribe](https://aws.amazon.com/transcribe/) -- [Sample output](https://seligman.github.io/podcast_to_text/Example-Results-AWS-Transcribe.html)
+* [OpenAI Speech to Text](https://platform.openai.com/docs/guides/speech-to-text) -- [Sample output](https://seligman.github.io/podcast_to_text/Example-Results-OpenAI.html)
+* [Whisper](https://github.com/openai/whisper) -- Sample output: [Tiny](https://seligman.github.io/podcast_to_text/Example-Results-Whisper-Tiny.html), [Large](https://seligman.github.io/podcast_to_text/Example-Results-Whisper-Large.html) models
+* [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) -- Sample output: [Tiny](https://seligman.github.io/podcast_to_text/Example-Results-Whisper_CPP-Tiny.html), [Large](https://seligman.github.io/podcast_to_text/Example-Results-Whisper_CPP-Large.html) models
+* [Whisper-Timestamped](https://github.com/linto-ai/whisper-timestamped) -- Sample output: [Medium](https://seligman.github.io/podcast_to_text/Example-Results-WhisperTimestamped-Medium.html) model.
