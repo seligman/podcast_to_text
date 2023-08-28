@@ -15,6 +15,7 @@ import engines.transcribe
 import engines.whisper
 import engines.whisper_cpp
 import engines.whisper_timestamped
+import engines.whisperx
 def setup_engines():
     # Validate the engines implemenet the expected functions
     to_setup = [
@@ -23,6 +24,7 @@ def setup_engines():
         engines.whisper,
         engines.whisper_cpp,
         engines.whisper_timestamped,
+        engines.whisperx,
     ]
     expected = [
         ('get_id', 'Get an unique ID for this engine'),
@@ -68,6 +70,15 @@ def create_settings():
     with open(fn, "wt", newline="", encoding="utf-8") as f:
         json.dump(settings, f, indent=4)
 
+def enumerate_words(data):
+    for frame in data:
+        if len(frame) == 3:
+            word, start, end = frame
+            speaker = -1
+        else:
+            word, start, end, speaker = frame
+        yield word, start, end, speaker
+
 @opt("Transcribe an MP3 file and create a webpage")
 def create_webpage(settings_file):
     with open(settings_file, "rt", encoding="utf-8") as f:
@@ -109,8 +120,8 @@ def create_webpage(settings_file):
         data = []
         for cur in temp:
             chunk = engine.parse_data(cur['data'])
-            chunk = [(word, start + cur['offset'], end + cur['offset']) for word, start, end in chunk]
-            data.extend(chunk)
+            for word, start, end, speaker in enumerate_words(chunk):
+                data.append((word, start + cur['offset'], end + cur['offset'], speaker))
     else:
         # Non-chunked data, just read and parse it as is
         data = engine.parse_data(data)

@@ -201,6 +201,11 @@ p.current {
     color: #aaa;
 }
 
+.speaker {
+    color: #999;
+    font-style: italic;
+}
+
 .hidden {
     display: none;
 }
@@ -771,7 +776,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         try {
             var temp = window.location.hash;
             if (temp.length > 1) {
-                temp = parseFloat(temp.substring(1)) / 10;
+                temp = parseFloat(temp.substr(1)) / 10;
                 player.getElementsByTagName("source")[0].src += "#t=" + temp;
                 setPos = false;
             }
@@ -845,7 +850,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 }
             });
         }
-        if (lastElem !== null && lastHighlighted === null || (lastHighlighted !== null && !isIn)) {
+        if (lastElem !== null && (lastHighlighted === null || (lastHighlighted !== null && !isIn))) {
             if (at >= 60) {
                 window.localStorage.setItem('wordID', wordID);
                 window.localStorage.setItem('pos', at);
@@ -932,7 +937,15 @@ document.addEventListener("DOMContentLoaded", function(event) {
             temp.at = at;
             temp.onclick = move;
             temp.className = "word";
-            temp.appendChild(document.createTextNode(word));
+            if (word.search(/^[A-Z]: /) == 0) {
+                var speaker = document.createElement("span");
+                speaker.textContent = word.substr(0, 3);
+                speaker.className = "speaker";
+                lastPara.appendChild(speaker);
+                temp.appendChild(document.createTextNode(word.substr(3)));
+            } else {
+                temp.appendChild(document.createTextNode(word));
+            }
             temp.para = lastPara;
             lastPara.appendChild(temp);
             byTime.push(temp);

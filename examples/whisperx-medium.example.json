@@ -1,0 +1,12 @@
+{
+    "source_mp3": "examples/International_Space_Station.mp3",
+    "target_fn": "examples/Example-Results-WhisperX-Medium.html",
+    "engine": "whisperx",
+    "engine_details": {
+        "model": "medium",
+        "batch_size": "16",
+        "compute_type": "float16",
+        "device": "cuda",
+        "hf_token": ""
+    }
+}
