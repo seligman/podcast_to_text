@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION = 42            # Version of this package
+VERSION = 43            # Version of this package
 DEBUG_PRINT = False     # Set this to True to log all print() output
 DEBUG_INPUT = False     # Set this to True to log all input received
 DELAY_INPUT = False     # Set this to True to take 1 second to process each key
@@ -466,7 +466,9 @@ def list_picker(opts, max_rows=-1, line_numbers=True, scroll_bar=True, keep_head
     # If "any_key" is enabled for this menu item, then the call back dictionary will have an 
     # additional key of "key" with the key-press value.  If it returns None, the key press 
     # is handled normally, otherwise the return value is called with the same dictionary after
-    # ensuring the input and output will work normally.
+    # ensuring the input and output will work normally.  The callback can be wrapped in a dictionary
+    # like {"clear": False, "callback": func, "use_callback": True} to prevent the screen updates 
+    # if the secondary callback will only update menu items
 
     with GetChWrapper() as getch:
         enable_ansi()
@@ -496,6 +498,7 @@ def list_picker(opts, max_rows=-1, line_numbers=True, scroll_bar=True, keep_head
                 self.desc = desc            # "desc", or the first item in a tuple, the item to display
                 self.orig_desc = desc       # The complete "desc" for multiline displays
                 self.display = desc         # What from "desc" is displayed due to screen size
+                self.trimmed = None         # Used by the trim helper to ensure it's not over trimming
                 self.ret = ret              # "ret", or the second item in a tuple, the return value when selected
                 self.underline = False      # "underline", this item has underlines for square brackets
                 self.default = False        # "default", this item is selected by default
@@ -603,26 +606,28 @@ def list_picker(opts, max_rows=-1, line_numbers=True, scroll_bar=True, keep_head
             if len(filtered) > rows and scroll_bar:
                 x -= 2
             for item in opts:
-                item.display = item.desc
-                codes = []
-                if item.underline:
-                    temp = ""
-                    for test_char in item.display:
-                        if test_char == "[":
-                            codes.append((len(temp), get_ansi('<underline>')))
-                        elif test_char == "]":
-                            codes.append((len(temp), get_ansi('<notunderline>')))
-                        else:
-                            temp += test_char
-                    item.display = temp
-                target = max(3, x - unicode_len(item.pre))
-                if unicode_len(item.display) > target:
-                    temp = item.display
-                    while unicode_len(temp) > target-3:
-                        temp = temp[:-1]
-                    item.display = temp + "..."
-                for pos, code in codes[::-1]:
-                    item.display = item.display[:pos] + code + item.display[pos:]
+                if item.trimmed != item.desc:
+                    item.trimmed = item.desc
+                    item.display = item.desc
+                    codes = []
+                    if item.underline:
+                        temp = ""
+                        for test_char in item.display:
+                            if test_char == "[":
+                                codes.append((len(temp), get_ansi('<underline>')))
+                            elif test_char == "]":
+                                codes.append((len(temp), get_ansi('<notunderline>')))
+                            else:
+                                temp += test_char
+                        item.display = temp
+                    target = max(3, x - unicode_len(item.pre))
+                    if unicode_len(item.display) > target:
+                        temp = item.display
+                        while unicode_len(temp) > target-3:
+                            temp = temp[:-1]
+                        item.display = temp + "..."
+                    for pos, code in codes[::-1]:
+                        item.display = item.display[:pos] + code + item.display[pos:]
             max_desc_len = max(unicode_len(x.display) for x in opts)
 
         trim_descs()
@@ -698,7 +703,7 @@ def list_picker(opts, max_rows=-1, line_numbers=True, scroll_bar=True, keep_head
                     updated = filtered[selected].callback(temp)
 
                 if updated is not None:
-                    if callable(updated):
+                    if callable(updated) or isinstance(updated, dict) and "use_callback" in updated:
                         return updated
                     select_item = False
                     if isinstance(updated, dict):
@@ -873,19 +878,27 @@ def list_picker(opts, max_rows=-1, line_numbers=True, scroll_bar=True, keep_head
                     add_to_filter = True
                     if len(filter) == 0 and len(filtered) > 0 and selected < len(filtered) and filtered[selected].any_key:
                         action_callback = call_callback(key=x)
+                        need_clear = True
+
+                        if action_callback is not None and isinstance(action_callback, dict):
+                            need_clear = action_callback.get("clear", True)
+                            action_callback = action_callback["callback"]
+
                         if action_callback is not None and callable(action_callback):
                             add_to_filter = False
 
-                            clean = ""
-                            if move_up > 0:
-                                clean += get_ansi(f"<up {move_up}>")
-                            for _ in range(move_up + 1):
-                                clean += " " * (term_width - 1) + "\n"
-                            clean = clean.rstrip("\n") + "\b" * (term_width - 1)
-                            print(clean + get_ansi("<show>"), end="", flush=True)
+                            if need_clear:
+                                clean = ""
+                                if move_up > 0:
+                                    clean += get_ansi(f"<up {move_up}>")
+                                for _ in range(move_up + 1):
+                                    clean += " " * (term_width - 1) + "\n"
+                                clean = clean.rstrip("\n") + "\b" * (term_width - 1)
+                                print(clean + get_ansi("<show>"), end="", flush=True)
                             shown = {}
                             updated_item = action_callback({"ret": filtered[selected].ret, "desc": filtered[selected].desc, "key": x})
-                            print(get_ansi("<hide>") + clean, end="", flush=True)
+                            if need_clear:
+                                print(get_ansi("<hide>") + clean, end="", flush=True)
                             call_callback(override=updated_item)
                     if add_to_filter:
                         # Update the filter list
