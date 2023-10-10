@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION = 43            # Version of this package
+VERSION = 44            # Version of this package
 DEBUG_PRINT = False     # Set this to True to log all print() output
 DEBUG_INPUT = False     # Set this to True to log all input received
 DELAY_INPUT = False     # Set this to True to take 1 second to process each key
@@ -279,9 +279,17 @@ def get_term_size(getch):
         temp += _debug_getch(getch(), "get_term_size")
         if temp[-1] == 'R':
             break
-    temp = temp[2:-1].split(';')
-    return int(temp[1]), int(temp[0])
+    # Ignore any extra characters that might be in the buffer
+    while len(temp) > 0 and temp[:2] != "\x1b[":
+        temp = temp[1:]
 
+    if temp.startswith("\x1b[") and temp.endswith("R"):
+        # If the string we got looks correct, then parse it
+        temp = temp[2:-1].split(';')
+        return int(temp[1]), int(temp[0])
+    else:
+        # Otherwise, just return a default value
+        return 25, 80
 
 def _split_items(opts, multiline, width):
     temp = []
