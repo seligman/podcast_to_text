@@ -42,7 +42,6 @@ def run_engine(settings, source_fn):
     import whisperx, torch # type: ignore
 
     args = {
-        'initial_prompt': "Hello, welcome to my lecture.",
         'best_of': 5,
         'beam_size': 5,
         'temperatures': (0.0, 0.2, 0.4, (0.6 + 1e-16), 0.8, 1.0),
@@ -71,7 +70,7 @@ def run_engine(settings, source_fn):
     if "word_segments" in result:
         del result["word_segments"]
 
-    # Clean up the "Speaker" labels to just by the speaker number
+    # Clean up the "Speaker" labels to just be the speaker number
     def clean_speaker(obj):
         if isinstance(obj, dict):
             if "speaker" in obj:
@@ -83,16 +82,6 @@ def run_engine(settings, source_fn):
             for val in obj:
                 clean_speaker(val)
     clean_speaker(result)
-
-    # This model likes to create the prompt when it gets slightly confused, remove it when seen
-    for phrase in ["Hello, welcome to my lecture.", "Welcome to my lecture."]:
-        phrase = tuple(phrase.split(" "))
-        for item in result['segments']:
-            for i in range(len(item['words']) - len(phrase), -1, -1):
-                if tuple(x['word'] for x in item['words'][i:i+len(phrase)]) == phrase:
-                    for i in range(i, i + len(phrase)):
-                        item['words'][i]['word'] = None
-            item['words'] = [x for x in item['words'] if x['word'] is not None]
 
     result = json.dumps(result, separators=(",", ":")).encode("utf-8")
 

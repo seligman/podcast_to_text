@@ -27,7 +27,6 @@ def run_engine(settings, source_fn):
     audio = whisper_timestamped.load_audio(source_fn)
     print("Transcribing...")
     args = {
-        'initial_prompt': "Hello, welcome to my lecture.",
         'best_of': 5,
         'beam_size': 5,
         'temperature': (0.0, 0.2, 0.4, (0.6 + 1e-16), 0.8, 1.0),
