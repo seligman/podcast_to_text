@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION = 44            # Version of this package
+VERSION = 45            # Version of this package
 DEBUG_PRINT = False     # Set this to True to log all print() output
 DEBUG_INPUT = False     # Set this to True to log all input received
 DELAY_INPUT = False     # Set this to True to take 1 second to process each key
@@ -66,7 +66,9 @@ if DEBUG_PRINT:
     # to a file "_print_output_log_"
     _old_print = print
     def print(*args, **kargs):
-        import json, datetime
+        import json, datetime, sys
+        if sys.version_info >= (3, 11): from datetime import UTC
+        else: UTC=datetime_fix.timezone.utc
         # Reverse ansi codes to the syntax used by print_ansi
         temp = re.sub("[<>]", lambda m: {"<":"<open>",">":"<close>"}[m.group(0)], args[0])
         for ansi, desc in [
@@ -81,7 +83,7 @@ if DEBUG_PRINT:
         temp = re.sub("\x1b\\[(?P<num>[0-9]+)(?P<dir>[ABCD])", arrows, temp)
         with open("_print_output_log_", "a") as f:
             # Print out whatever's passed to print
-            f.write(json.dumps([datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"), args[1:], kargs]) + "\n")
+            f.write(json.dumps([datetime.datetime.now(UTC).replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S"), args[1:], kargs]) + "\n")
             # And show each line of output line by line to make it easier to view
             temp = temp.replace("\n", "\n\x01")
             for row in temp.split("\x01"):
@@ -144,8 +146,9 @@ def escape_ansi(value):
 
 def _debug_getch(value, call_no):
     if DEBUG_INPUT:
-        import json
-        import datetime
+        import json, datetime, sys
+        if sys.version_info >= (3, 11): from datetime import UTC
+        else: UTC=datetime_fix.timezone.utc
         if value is None:
             msg = "<none>"
         elif isinstance(value, str):
@@ -161,7 +164,7 @@ def _debug_getch(value, call_no):
         with open("_getch_log_", "a") as f:
             # Print out whatever's gotten as input
             f.write(json.dumps([
-                datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"), 
+                datetime.datetime.now(UTC).replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S"), 
                 msg,
                 call_no]) + "\n")
     return value
