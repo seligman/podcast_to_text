@@ -4,6 +4,9 @@ from datetime import datetime
 import random
 import time
 import json
+import sys
+if sys.version_info >= (3, 11): from datetime import UTC
+else: import datetime as datetime_fix; UTC=datetime_fix.timezone.utc
 
 def get_name():
     return "AWS Transcribe"
@@ -42,7 +45,7 @@ def run_engine(settings, source_fn):
     transcribe = session.client('transcribe', **args)
     s3 = session.client('s3', **args)
 
-    now = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    now = datetime.now(UTC).replace(tzinfo=None).strftime("%Y%m%d-%H%M%S")
     job_id = "transcribe_" + now + "-" + "".join(chr(ord('a') + random.randint(0, 25)) for _ in range(10))
     s3_key = settings['s3_prefix'] + job_id + ".mp3"
 
