@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION = 45            # Version of this package
+VERSION = 46            # Version of this package
 DEBUG_PRINT = False     # Set this to True to log all print() output
 DEBUG_INPUT = False     # Set this to True to log all input received
 DELAY_INPUT = False     # Set this to True to take 1 second to process each key
@@ -371,10 +371,12 @@ class Settings():
         self.options = options
         self.data = {}
         self.fn = fn
-        if os.path.isfile(fn):
-            import json
+        try:
             with open(fn, "rt") as f:
+                import json
                 self.data = json.load(f)
+        except FileNotFoundError:
+            pass
         for key, opts in self.options:
             self.data[key] = self.data.get(key, opts[0][1])
             if self.data[key] not in set(x[1] for x in opts):
