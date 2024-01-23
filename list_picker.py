@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-VERSION = 46            # Version of this package
+__version__ = 46        # Version of this package
 DEBUG_PRINT = False     # Set this to True to log all print() output
 DEBUG_INPUT = False     # Set this to True to log all input received
 DELAY_INPUT = False     # Set this to True to take 1 second to process each key
