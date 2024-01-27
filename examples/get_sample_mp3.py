@@ -3,7 +3,7 @@
 from urllib.request import urlretrieve
 import os
 
-url = "http://www.nasa.gov/sites/default/files/atoms/audio/podcast_the_international_space_station.mp3"
+url = "https://www.nasa.gov/wp-content/uploads/2023/07/podcast_the_international_space_station.mp3"
 fn = "International_Space_Station.mp3"
 
 if os.path.isfile(fn):
