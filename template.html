@@ -158,8 +158,8 @@ span.word {
 
 p {
     padding:4px 0;
-    margin-left: 7ch;
-    text-indent: -7ch;
+    margin-left: 2ch;
+    text-indent: -2ch;
     margin-top: .1em;
     margin-bottom: .1em;
     line-height: 1.3;
@@ -167,7 +167,7 @@ p {
 
 p.current {
     background-color: #444;
-    box-shadow:4px 0 0 #444, -7ch 0 0 #444;
+    box-shadow:4px 0 0 #444, -2ch 0 0 #444;
     border-radius: 5px;
     scroll-margin: 2.5em 0;
 }
@@ -185,7 +185,7 @@ p.current {
     .content {
         padding-top: calc(60px * var(--extra_height));
     }
-    .play {
+    .playPause {
         transform: scale(1.9);
     }
     p {
@@ -196,7 +196,15 @@ p.current {
         box-shadow:4px 0 0 #444, -4px 0 0 #444;
     }
 }
-
+@media only screen and (min-width: 700px) {
+    .content {
+        width: 600px;
+        margin-left: calc((100% - 600px) / 2);
+    }
+    p {
+        margin-left: 0;
+    }
+}
 .timecode {
     color: #aaa;
 }
@@ -210,12 +218,16 @@ p.current {
     display: none;
 }
 
-.play {
+.playPause {
     margin-left: 1em;
     margin-right: 1em;
     margin-bottom: 5px;
     margin-top: 5px;
     cursor: pointer;
+}
+
+.play .forPause {
+    display: none;
 }
 
 .slider {
@@ -253,17 +265,6 @@ p.current {
     margin: 10px;
 }
 
-.circlePause {
-	transition: stroke-dashoffset 250ms ease-in-out;
-	stroke-dashoffset: 0;
-	fill: none;
-}
-
-.circlePlay {
-	transition: stroke-dashoffset 250ms ease-in-out;
-	stroke-dashoffset: 314;
-}
-
 input[type=button],input[type=submit],input[type=reset] {
     background-color: #444;
     border: none;
@@ -295,7 +296,6 @@ input[type="text"],input[type="number"],textarea {
 var words = /* Start_Word_Data */{WORDS_VAR}/* End_Word_Data */,
     wordID = "{{WORD_ID}}",
     byTime = [],
-    hideAnimation = 0,
     paras = [],
     parasReady = false,
     lastHighlighted = null,
@@ -317,7 +317,6 @@ function move(e) {
     }
     var player = document.getElementById('player');
     if (playerLeftToLoad == -1) {
-        hideAnimation = (new Date().getTime()) + 300;
         var paused = player.paused;
         if (!paused) {
             player.pause();
@@ -887,18 +886,16 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }, false);
 
     player.addEventListener('play', function () {
-        if ((new Date().getTime()) > hideAnimation) {
-            document.getElementById("circle").className.baseVal = "circlePause";
-            document.getElementById("from_play_to_pause").beginElement();
+        if (!playerIsPlaying) {
+            document.getElementById("playButton").className.baseVal = "playPause pause";
             playerIsPlaying = true;
             turnOnWakeLock();
         }
     });
 
     player.addEventListener('pause', function () {
-        if ((new Date().getTime()) > hideAnimation) {
-            document.getElementById("circle").className.baseVal = "circlePlay";
-            document.getElementById("from_pause_to_play").beginElement();
+        if (playerIsPlaying) {
+            document.getElementById("playButton").className.baseVal = "playPause play";
             playerIsPlaying = false;
             turnOffWakeLock();
         }
@@ -975,8 +972,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             wakeLock = null;
             turnOnWakeLock();
         }
-        if (lastHighlighted !== null && autoScroll) {
-            lastHighlighted.scrollIntoView({
+        if (lastHighlighted !== null && autoScroll && lastHighlighted.length > 0) {
+            lastHighlighted[lastHighlighted.length-1].scrollIntoView({
                 "block": "nearest",
                 "behavior": "smooth",
             });
@@ -998,13 +995,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
 <body>
 
 <div class="rows header">
-    <svg class="play" width="50" height="50" id="btnPlay" viewBox="-2 -2 108 108" onclick="play()">
-        <circle class="circlePlay" id="circle" cx="51" cy="51" r="50" stroke-dasharray="314" stroke-dashoffset="0" style="stroke-width:5px;stroke:#bbf;" />
-        <line id='line1' x1="38" y1="30" x2="38" y2="70" style="stroke-width:8px;stroke:#bbf;stroke-linecap:round;" />
-        <path id='line2' d="M 38 30 L 70 50 L 38 70" rx="10" ry="10" style="stroke-width:8px;stroke:#bbf;fill:#bbf;stroke-linejoin:round;stroke-linecap:round;">
-            <animate attributeName="d" dur="250ms" from="M 38 30 L 70 50 L 38 70" to="M 66 30 L 66 50 L 66 70" fill="freeze" id="from_play_to_pause" begin="indefinite"/>
-        </path>
-        <animate xlink:href="#line2" attributeName="d" dur="250ms" from="M 66 30 L 66 50 L 66 70" to="M 38 30 L 70 50 L 38 70" begin="indefinite" fill="freeze" id="from_pause_to_play"/>
+    <svg id="playButton" class="playPause play" width="50" height="50" id="btnPlay" viewBox="-2 -2 108 108" onclick="play()">
+        <circle class="forPlay" cx="51" cy="51" r="50" style="stroke-width:1px;stroke:#000;" />
+        <line class="forPlay" x1="38" y1="30" x2="38" y2="70" style="stroke-width:8px;stroke:#bbf;stroke-linecap:round;" />
+        <path class="forPlay" d="M 38 30 L 70 50 L 38 70" rx="10" ry="10" style="stroke-width:8px;stroke:#bbf;fill:#bbf;stroke-linejoin:round;stroke-linecap:round;" />
+        <circle class="forPause" cx="51" cy="51" r="50" style="stroke-width:5px;stroke:#bbf;" />
+        <line class="forPause" x1="38" y1="30" x2="38" y2="70" style="stroke-width:8px;stroke:#bbf;stroke-linecap:round;" />
+        <path class="forPause" d="M 66 30 L 66 50 L 66 70" rx="10" ry="10" style="stroke-width:8px;stroke:#bbf;fill:#bbf;stroke-linejoin:round;stroke-linecap:round;" />
     </svg>
     <input class="slider fill" type="range" min="0" max="1000" value="0" id="pos" onchange="posChange()" oninput="posChanging()" onmousedown="posMoving()" onmouseup="posMoved()">
     <span id="posText">0:00:00<br><font size="-1">-0:00:00</font></span>
