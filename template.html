@@ -771,18 +771,16 @@ document.addEventListener("DOMContentLoaded", function(event) {
     var player = document.getElementById('player');
     player.newTarget = null;
 
-    var setPos = true;
-    if (setPos) {
+    var targetPos = null;
+    if (targetPos === null) {
         try {
             var temp = window.location.hash;
             if (temp.length > 1) {
-                temp = parseFloat(temp.substr(1)) / 10;
-                player.getElementsByTagName("source")[0].src += "#t=" + temp;
-                setPos = false;
+                targetPos = parseFloat(temp.substr(1)) / 10;
             }
         } catch (e) { }
     }
-    if (setPos) {
+    if (targetPos === null) {
         try {
             var tempID = window.localStorage.getItem('wordID');
             var tempPos = window.localStorage.getItem('pos');
@@ -790,8 +788,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 tempPos = parseFloat(tempPos);
                 tempPos -= 5;
                 if (tempPos > 0) {
-                    player.getElementsByTagName("source")[0].src += "#t=" + tempPos;
-                    setPos = false;
+                    targetPos = tempPos;
                 }
             }
         } catch (e) { }
@@ -799,6 +796,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     player.addEventListener("loadedmetadata", function() {
         playerLoaded();
+        if (targetPos !== null) {
+            player.currentTime = targetPos;
+        }
     });
     player.addEventListener("loadeddata", function() {
         playerLoaded();
