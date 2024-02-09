@@ -3,6 +3,7 @@
 # Extend http.server to include support for range requests for demo purposes
 
 import os
+import argparse
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 
 class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
@@ -78,6 +79,10 @@ class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
             outfile.write(buf)
 
 if __name__ == '__main__':
-    server = HTTPServer(("127.0.0.1", 8000), RangeHTTPRequestHandler)
-    print("Running server on http://127.0.0.1:8000/")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, help="Port to run on", default=8000)
+    parser.add_argument("--bind", type=str, help="Local IP address to bind to", default="127.0.0.1")
+    args = parser.parse_args()
+    server = HTTPServer((args.bind, args.port), RangeHTTPRequestHandler)
+    print(f"Running server on http://{args.bind}:{args.port}/")
     server.serve_forever()
