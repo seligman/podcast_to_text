@@ -743,7 +743,7 @@ function playerLoaded() {
             const ms = navigator.mediaSession;
             if (ms) {
                 var title = "Podcast Episode", album = "Podcasts";
-                if (titleMeta.length > 0) {
+                if (typeof titleMeta !== 'undefined' && titleMeta !== null && titleMeta.length > 0) {
                     var temp = JSON.parse(atob(titleMeta));
                     if (temp['link_title'].length > 0) {
                         title = temp['link_title'];
