@@ -10,6 +10,7 @@
 <style>
 :root {
     --content-size: 100%;
+    --word-pointer: pointer;
 }
 
 html,
@@ -138,7 +139,7 @@ body {
 span.current {
     color:#fff;
     background:#833;
-    cursor: pointer;
+    cursor: var(--word-pointer);
     scroll-margin: calc(1.5em + 62px) 0 2.5em 0;
 }
 
@@ -153,7 +154,7 @@ span.right {
 }
 
 span.word {
-    cursor: pointer;
+    cursor: var(--word-pointer);
     scroll-margin: 2.5em 0;
 }
 
@@ -294,7 +295,13 @@ input[type="text"],input[type="number"],textarea {
 </style>
 <script>
 
-var words = /* Start_Word_Data */{WORDS_VAR}/* End_Word_Data */,
+function getParam(name, decode) {
+    var ret = new URLSearchParams(location.search).get(name);
+    if (ret !== null && decode) { ret = atob(ret); }
+    return ret
+}
+
+var words = /* |SWords| */{WORDS_VAR}/* |EWords| */,
     wordID = "{{WORD_ID}}",
     byTime = [],
     paras = [],
@@ -307,6 +314,8 @@ var words = /* Start_Word_Data */{WORDS_VAR}/* End_Word_Data */,
     jumpOnClick = true,
     autoScroll = true,
     wakeLock = null,
+    isInterrupted = false,
+    player = null,
     requestWakeLock = null;
 
 function move(e) {
@@ -316,20 +325,21 @@ function move(e) {
     if (e.srcElement !== undefined) {
         e = e.srcElement.at;
     }
-    var player = document.getElementById('player');
     if (playerLeftToLoad == -1) {
         var paused = player.paused;
         if (!paused) {
-            player.pause();
+            play();
         }
         player.currentTime = e;
         if (!paused) {
-            player.play();
+            play();
         }
         updateScrolls();
     } else {
         player.newTarget = e;
-        player.play();
+        if (player.paused) {
+            play();
+        }
     }
 };
 
@@ -342,7 +352,7 @@ document.addEventListener('keydown', e => {
                 return true;
             }
 
-            if ((e.code === 'ArrowUp') || (e.code === 'ArrowDown')) {
+            if (new Set(['ArrowUp', 'ArrowDown']).has(e.code)) {
                 e.preventDefault();
                 var temp = null;
                 if (temp === null && lastHighlighted !== null) {
@@ -355,31 +365,26 @@ document.addEventListener('keydown', e => {
                     temp = temp.childNodes;
                     for (var i = 0; i < temp.length; i++) {
                         if (temp[i].hasOwnProperty('at')) {
-                            document.getElementById('player').currentTime = (temp[i].at + temp[i].at) / 2;
+                            player.currentTime = (temp[i].at + temp[i].at) / 2;
                             return true;
                         }
                     }
                 }
                 return true;
             }
-            if ((e.code === 'ArrowLeft') || (e.code === 'ArrowRight')) {
+            else if (new Set(['ArrowLeft', 'ArrowRight']).has(e.code)) {
                 e.preventDefault();
                 if (lastHighlighted === null) {
-                    var line = paras[0];
-                    var temp = line.childNodes;
+                    var line = paras[0], temp = line.childNodes;
                     for (var i = 0; i < temp.length; i++) {
                         if (temp[i].hasOwnProperty('at')) {
                             var word = temp[i];
-                            document.getElementById('player').currentTime = (word.at + word.atEnd) / 2;
+                            player.currentTime = (word.at + word.atEnd) / 2;
                             break
                         }
                     }
                 } else {
-                    if (e.code === 'ArrowLeft') {
-                        document.getElementById('player').currentTime = lastHighlighted[0].at - (1.0 * player.playbackRate);
-                    } else {
-                        document.getElementById('player').currentTime = lastHighlighted[lastHighlighted.length-1].atEnd + 0.1;
-                    }
+                    player.currentTime = e.code === 'ArrowLeft' ? lastHighlighted[0].at - (1.0 * player.playbackRate) : lastHighlighted[lastHighlighted.length-1].atEnd + 0.1;
                 }
                 return true;
             }
@@ -407,9 +412,19 @@ function getTick(at) {
 }
 
 function play() {
-    var player = document.getElementById('player');
+    if (playerLeftToLoad >= 0) {
+        playerLeftToLoad = 0;
+        playerLoaded();
+    }
+
     if (player.paused) {
         player.play();
+        if ('audioSession' in navigator) {
+            const as = navigator.audioSession;
+            if (as) {
+                as.type = 'playback';
+            }
+        }
     } else {
         player.pause();
     }
@@ -459,24 +474,20 @@ function updateScrolls() {
         return;
     }
 
-    var pos = document.getElementById("pos");
-    var loc = pos.value / pos.max;
-
-    var temp = [window.innerHeight, paras[paras.length - 1].getBoundingClientRect().bottom, loc];
+    var pos = document.getElementById("pos"), loc = pos.value / pos.max, 
+        temp = [window.innerHeight, paras[paras.length - 1].getBoundingClientRect().bottom, loc];
     if (temp[0] == scrollState[0] && temp[1] == scrollState[1] && temp[2] == scrollState[2]) {
         return;
     }
     scrollState = temp;
 
-    var pageStart = null, pageEnd = null;
-
-    pageStart = bisect(paras, e => e.getBoundingClientRect().bottom >= 50, true);
-    pageEnd = bisect(paras, e => e.getBoundingClientRect().top <= window.innerHeight, false);
+    var pageStart = bisect(paras, e => e.getBoundingClientRect().bottom >= 50, true), 
+        pageEnd = bisect(paras, e => e.getBoundingClientRect().top <= window.innerHeight, false);
 
     if (pageStart !== null && pageEnd !== null) {
         function calcPerc(e, invert) {
-            var rect = e.getBoundingClientRect();
-            var perc = (invert ? (window.innerHeight - rect.top) : (rect.bottom - 50)) / (rect.bottom - rect.top);
+            var rect = e.getBoundingClientRect(), 
+                perc = (invert ? (window.innerHeight - rect.top) : (rect.bottom - 50)) / (rect.bottom - rect.top);
             perc = perc < 0 ? 0 : (perc > 1 ? 1 : perc);
             if (invert) {
                 return ((e.end * perc) + (e.start * (1 - perc)));
@@ -488,9 +499,7 @@ function updateScrolls() {
         pageStart = calcPerc(pageStart, false) ;
         pageEnd = calcPerc(pageEnd, true) ;
 
-        var done = '#555', togo = '#333', page = '#66a';
-
-        var view = 3;
+        var done = '#555', togo = '#333', page = '#66a', view = 3;
         if (pageEnd <= loc) {
             view = 1;
         } else if (pageStart >= loc) {
@@ -533,15 +542,14 @@ function hideDrop() {
 function posSelected(e) {
     hideDrop();
     e.preventDefault = true;
-    var player = document.getElementById('player');
     var newPos = document.getElementById('enteredPos').value;
     if (newPos.includes(":") || newPos.includes(".") || newPos.includes("-") || newPos.includes(",") || newPos.includes(" ")) {
         newPos = newPos.replace(/[,. -]/g, ":");
         newPos = newPos.split(":");
         if (newPos.length == 3 || newPos.length == 2) {
-            var h = parseInt(newPos.length == 3 ? newPos[0] : '0');
-            var m = parseInt(newPos.length == 3 ? newPos[1] : newPos[0]);
-            var s = parseInt(newPos.length == 3 ? newPos[2] : newPos[1]);
+            var h = parseInt(newPos.length == 3 ? newPos[0] : '0'), 
+                m = parseInt(newPos.length == 3 ? newPos[1] : newPos[0]), 
+                s = parseInt(newPos.length == 3 ? newPos[2] : newPos[1]);
             if (h >= 0 && h <= 99 && m >= 0 && m <= 59 && s >= 0 && s <= 59) {
                 var temp = h * 3600 + m * 60 + s;
                 if (temp >= 0 && temp <= 43200) {
@@ -605,8 +613,7 @@ function showPos() {
 }
 
 var clipboard = (function(window, document, navigator) {
-    var textArea,
-        copy;
+    var textArea, copy;
 
     function isOS() {
         return navigator.userAgent.match(/ipad|iphone/i);
@@ -619,8 +626,7 @@ var clipboard = (function(window, document, navigator) {
     }
 
     function selectText() {
-        var range,
-            selection;
+        var range, selection;
 
         if (isOS()) {
             range = document.createRange();
@@ -651,7 +657,6 @@ var clipboard = (function(window, document, navigator) {
 })(window, document, navigator);
 
 function getLink() {
-    var player = document.getElementById('player');
     var uri = window.location.href.split("#")[0] + "#" + Math.floor(player.currentTime * 10);
     clipboard.copy(uri);
     alert("Link copied to clipboard");
@@ -660,33 +665,20 @@ function getLink() {
 
 function onAutoScroll() {
     autoScroll = !autoScroll;
-    if (autoScroll) {
-        document.getElementById('auto_scroll').className = "util sel";
-    } else {
-        document.getElementById('auto_scroll').className = "util nosel";
-    }
+    document.getElementById('auto_scroll').className = (autoScroll ? "util sel" : "util nosel");
 }
 
 function onClickToJump() {
     jumpOnClick = !jumpOnClick;
-    if (jumpOnClick) {
-        document.getElementById('click_to_jump').className = "util sel";
-    } else {
-        document.getElementById('click_to_jump').className = "util nosel";
-    }
+    document.getElementById('click_to_jump').className = (jumpOnClick ? "util sel" : "util nosel");
+    document.querySelector(':root').style.setProperty('--word-pointer', jumpOnClick ? 'pointer' : 'auto');
 }
 
 function setSpeed(val, target) {
-    var player = document.getElementById('player');
     player.playbackRate = val;
     var other = ['0_5', '1_0', '1_25', '1_5', '1_75', '2_0', '2_5', '3_0'];
     for (var i = 0; i < other.length; i++) {
-        var sel = document.getElementById('speed_' + other[i]);
-        if (other[i] == target) {
-            sel.className = "util sel";
-        } else {
-            sel.className = "util nosel";
-        }
+        document.getElementById('speed_' + other[i]).className = (other[i] == target ? "util sel" : "util nosel");
     }
 }
 
@@ -696,16 +688,10 @@ function setSize(val, target) {
     document.documentElement.scrollTop = document.documentElement.scrollHeight * perc;
     var other = ['100', '125', '150', '200'];
     for (var i = 0; i < other.length; i++) {
-        var sel = document.getElementById('size_' + other[i]);
-        if (other[i] == target) {
-            sel.className = "util sel";
-        } else {
-            sel.className = "util nosel";
-        }
+        document.getElementById('size_' + other[i]).className = (other[i] == target ? "util sel" : "util nosel");
     }
 }
 
-var isInterrupted = false;
 function playerLoaded() {
     if (playerLeftToLoad > 0) {
         playerLeftToLoad--;
@@ -721,7 +707,6 @@ function playerLoaded() {
                 as.addEventListener("onstatechange", () => {
                     if (as.state === 'interrupted') {
                         isInterrupted = true;
-                        var player = document.getElementById('player');
                         if (!player.paused) {
                             player.pause();
                         }
@@ -729,9 +714,8 @@ function playerLoaded() {
                     if (as.state === 'inactive') {
                         if (isInterrupted) {
                             isInterrupted = false;
-                            var player = document.getElementById('player');
                             if (player.paused) {
-                                player.play();
+                                play();
                             }
                         }
                     }
@@ -761,27 +745,24 @@ function playerLoaded() {
                     ],
                 });
                 ms.setActionHandler("play", () => {
-                    var player = document.getElementById('player');
                     if (player.paused) {
-                        player.play();
+                        play();
                     }
                 });
                 ms.setActionHandler("pause", () => {
-                    var player = document.getElementById('player');
                     if (!player.paused) {
-                        player.pause();
+                        play();
                     }
                 });
                 ms.setActionHandler("seekbackward", () => {
-                    document.getElementById('player').currentTime -= 30;
+                    player.currentTime -= 30;
                 });
                 ms.setActionHandler("seekforward", () => {
-                    document.getElementById('player').currentTime += 30;
+                    player.currentTime += 30;
                 });
             }
         }
 
-        var player = document.getElementById('player');
         var dur = player.duration;
         document.getElementById("pos").max = dur * 10;
 
@@ -835,12 +816,34 @@ function windowBlur() {
     }
 }
 
+async function decodeData(value) {
+    const b64toBlob = (base64, type = 'application/octet-stream') => 
+        fetch(`data:${type};base64,${base64}`).then(res => res.blob());
+    const blob = await b64toBlob(value);
+    const ds = new DecompressionStream("gzip");
+    const decomp = blob.stream().pipeThrough(ds);
+    const decoded = await new Response(decomp).blob();
+    const text = await decoded.text();
+    const parsed = JSON.parse(text);
+    parsed['word'] = parsed['word'].split("|");
+    return parsed;
+}
+
 document.addEventListener("DOMContentLoaded", function(event) {
-    var player = document.getElementById('player');
+    player = document.getElementById('player');
     player.newTarget = null;
 
 
     var targetPos = null;
+    
+    if (targetPos === null) {
+        try {
+            var temp = getParam("start");
+            if (temp !== null && temp.length > 0) {
+                targetPos = parseFloat(temp) / 10;
+            }
+        } catch (e) { }
+    }
     if (targetPos === null) {
         try {
             var temp = window.location.hash;
@@ -851,8 +854,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }
     if (targetPos === null) {
         try {
-            var tempID = window.localStorage.getItem('wordID');
-            var tempPos = window.localStorage.getItem('pos');
+            var tempID = window.localStorage.getItem('wordID'), 
+                tempPos = window.localStorage.getItem('pos');
             if (tempID == wordID) {
                 tempPos = parseFloat(tempPos);
                 tempPos -= 5;
@@ -881,15 +884,14 @@ document.addEventListener("DOMContentLoaded", function(event) {
             document.getElementById("pos").value = at * 10;
             posChanging();
         }
-        var lastElem = null;
-        var highlightTime = 1.0 * player.playbackRate;
+        var lastElem = null, 
+            highlightTime = 1.0 * player.playbackRate;
 
         if (lastHighlighted !== null) {
             if (at >= lastHighlighted[0].at && at < lastHighlighted[lastHighlighted.length-1].atEnd) {
                 lastElem = lastHighlighted[0];
             } else if (lastHighlighted[lastHighlighted.length-1].hasOwnProperty("next")) {
-                var started = lastHighlighted[lastHighlighted.length-1].next;
-                var ended = started;
+                var started = lastHighlighted[lastHighlighted.length-1].next, ended = started;
 
                 while (true) {
                     if (at >= started.at && at < ended.atEnd) {
@@ -971,94 +973,92 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
     });
 
-    var children = [];
-    var lastPara = null;
-    var lastAt = null;
-    var lastHeader = 0;
-    for (var i = 0; i < words.length; i += 2) {
-        var at = words[i], word = words[i+1];
-        at += lastAt;
-        lastAt = at;
-        at /= 100;
-        if (word == -1) {
-            lastPara = document.createElement("p");
-            lastPara.at = at;
-            lastPara.atEnd = at;
-            var temp = document.createElement("span");
-            temp.className = "timecode";
-            temp.appendChild(document.createTextNode(getTick(at) + ":"));
-            lastPara.appendChild(temp);
-            children.push(lastPara);
-            paras.push(lastPara);
-        } else {
-            lastPara.children[lastPara.children.length-1].textContent += ' ';
-            lastPara.atEnd = at;
-
-            var temp = document.createElement("span");
-
-            if (byTime.length > 0) {
-                byTime[byTime.length - 1].atEnd = at;
-                byTime[byTime.length - 1].next = temp;
-            }
-
-            temp.at = at;
-            temp.onclick = move;
-            temp.className = "word";
-            if (word.search(/^[A-Z]: /) == 0) {
-                var speaker = document.createElement("span");
-                speaker.textContent = word.substr(0, 3);
-                speaker.className = "speaker";
-                lastPara.appendChild(speaker);
-                temp.appendChild(document.createTextNode(word.substr(3)));
+    decodeData(words).then((words) => {
+        var children = [], lastPara = null, lastAt = null, lastHeader = 0;
+        for (var i = 0; i < words['word'].length; i++) {
+            var at = words['off'][i], word = words['word'][i];
+            at += lastAt;
+            lastAt = at;
+            at /= 100;
+            if (word == '') {
+                lastPara = document.createElement("p");
+                lastPara.at = at;
+                lastPara.atEnd = at;
+                var temp = document.createElement("span");
+                temp.className = "timecode";
+                temp.appendChild(document.createTextNode(getTick(at) + ":"));
+                lastPara.appendChild(temp);
+                children.push(lastPara);
+                paras.push(lastPara);
             } else {
-                temp.appendChild(document.createTextNode(word));
+                lastPara.children[lastPara.children.length-1].textContent += ' ';
+                lastPara.atEnd = at;
+
+                var temp = document.createElement("span");
+
+                if (byTime.length > 0) {
+                    byTime[byTime.length - 1].atEnd = at;
+                    byTime[byTime.length - 1].next = temp;
+                }
+
+                temp.at = at;
+                temp.onclick = move;
+                temp.className = "word";
+                if (word.search(/^[A-Z]: /) == 0) {
+                    var speaker = document.createElement("span");
+                    speaker.textContent = word.substr(0, 3);
+                    speaker.className = "speaker";
+                    lastPara.appendChild(speaker);
+                    temp.appendChild(document.createTextNode(word.substr(3)));
+                } else {
+                    temp.appendChild(document.createTextNode(word));
+                }
+                temp.para = lastPara;
+                lastPara.appendChild(temp);
+                byTime.push(temp);
             }
-            temp.para = lastPara;
-            lastPara.appendChild(temp);
-            byTime.push(temp);
+        };
+        if (byTime.length > 0) {
+            byTime[byTime.length - 1].atEnd = at + 3600;
         }
-    };
-    if (byTime.length > 0) {
-        byTime[byTime.length - 1].atEnd = at + 3600;
-    }
-    document.getElementById("pos").max = (lastAt/100) * 10;
-    document.getElementById("transcript").append(...children);
+        document.getElementById("pos").max = (lastAt/100) * 10;
+        document.getElementById("transcript").append(...children);
 
-    var hidden;
-    var visibilityChange;
-    if (typeof document.hidden !== "undefined") {
-        hidden = "hidden";
-        visibilityChange = "visibilitychange";
-    } else if (typeof document.msHidden !== "undefined") {
-        hidden = "msHidden";
-        visibilityChange = "msvisibilitychange";
-    } else if (typeof document.webkitHidden !== "undefined") {
-        hidden = "webkitHidden";
-        visibilityChange = "webkitvisibilitychange";
-    }
+        var hidden, visibilityChange;
+        if (typeof document.hidden !== "undefined") {
+            hidden = "hidden";
+            visibilityChange = "visibilitychange";
+        } else if (typeof document.msHidden !== "undefined") {
+            hidden = "msHidden";
+            visibilityChange = "msvisibilitychange";
+        } else if (typeof document.webkitHidden !== "undefined") {
+            hidden = "webkitHidden";
+            visibilityChange = "webkitvisibilitychange";
+        }
 
-    function pageAwake() {
-        if (wakeLock !== null) {
-            wakeLock = null;
-            turnOnWakeLock();
+        function pageAwake() {
+            if (wakeLock !== null) {
+                wakeLock = null;
+                turnOnWakeLock();
+            }
+            if (lastHighlighted !== null && autoScroll && lastHighlighted.length > 0) {
+                lastHighlighted[lastHighlighted.length-1].scrollIntoView({
+                    "block": "nearest",
+                    "behavior": "smooth",
+                });
+            }
         }
-        if (lastHighlighted !== null && autoScroll && lastHighlighted.length > 0) {
-            lastHighlighted[lastHighlighted.length-1].scrollIntoView({
-                "block": "nearest",
-                "behavior": "smooth",
-            });
-        }
-    }
-    document.addEventListener(visibilityChange, () => { 
-        if (!document[hidden]) {
-            pageAwake();
-        }
+        document.addEventListener(visibilityChange, () => { 
+            if (!document[hidden]) {
+                pageAwake();
+            }
+        });
+        document.addEventListener('pageshow', pageAwake);
+        document.addEventListener('focus', pageAwake);
+        document.addEventListener('scroll', updateScrolls);
+        window.addEventListener('blur', windowBlur);
+        setupWakeLock();
     });
-    document.addEventListener('pageshow', pageAwake);
-    document.addEventListener('focus', pageAwake);
-    document.addEventListener('scroll', updateScrolls);
-    window.addEventListener('blur', windowBlur);
-    setupWakeLock();
 });
 </script>
 </head>

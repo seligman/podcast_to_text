@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 from hashlib import sha256
+import base64
+import gzip
 import html
 import json
 
@@ -133,7 +135,7 @@ def fill_out(words, mp3_fn):
 
     # Create a dump out of final data to send to the webpage, the webpage itself
     # will merge these to try to prevent too much animated noise
-    simple = []
+    simple = {'off': [], 'word': []}
     last_pos, last_value = 0, 0
     transcript = ""
     def track_pos(value):
@@ -147,20 +149,40 @@ def fill_out(words, mp3_fn):
         merged = []
         for word in paragraph:
             merged.append(word)
-        simple += [track_pos(merged[0]['start']), -1]
+
+        simple['off'].append(track_pos(merged[0]['start']))
+        simple['word'].append('')
         for word in merged:
-            simple += [track_pos(word['start']), word['word']]
+            simple['off'].append(track_pos(word['start']))
+            simple['word'].append(word['word'].replace("|", "/"))
 
     fn = mp3_fn.replace("\\", "/").split("/")[-1]
 
     data = data.replace("{{TITLE}}", html.escape(fn.replace(".mp3", "")))
     data = data.replace("{{MP3_NAME}}", html.escape(fn))
     data = data.replace("{{WORD_ID}}", sha256(fn.encode("utf-8")).hexdigest()[:10])
-    data = data.replace("{WORDS_VAR}", json.dumps(simple, separators=(",", ":")))
+    data = data.replace("{WORDS_VAR}", encode_words(simple))
 
     data = "".join(x.strip() for x in data.split("\n"))
 
     return data
+
+def encode_words(value):
+    # Compress and encode the simple version of the word data to a compressed
+    # format used by the webpage
+    
+    # Turn the list of words to a single string seperated by a pipe.
+    value['word'] = "|".join(value['word'])
+    # Place the rest in a compressed json dump
+    value = json.dumps(value, separators=(",", ":"))
+    value = value.encode("utf-8")
+    value = gzip.compress(value)
+    value = base64.b64encode(value)
+    value = value.decode("utf-8")
+    # One final pass through json just to ensure the string is javascript safe
+    value = json.dumps(value)
+
+    return value
 
 if __name__ == "__main__":
     print("This module is not meant to be run directly.")
