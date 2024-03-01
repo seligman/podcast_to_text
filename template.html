@@ -212,7 +212,10 @@ p.current {
 }
 
 .speaker {
-    color: #999;
+    color: #888;
+}
+
+.diff {
     font-style: italic;
 }
 
@@ -296,12 +299,12 @@ input[type="text"],input[type="number"],textarea {
 <script>
 
 function getParam(name, decode) {
-    var ret = new URLSearchParams(location.search).get(name);
+    let ret = new URLSearchParams(location.search).get(name);
     if (ret !== null && decode) { ret = atob(ret); }
     return ret
 }
 
-var words = /* |SWords| */{WORDS_VAR}/* |EWords| */,
+let words = /* |SWords| */{WORDS_VAR}/* |EWords| */,
     wordID = "{{WORD_ID}}",
     byTime = [],
     paras = [],
@@ -326,7 +329,7 @@ function move(e) {
         e = e.srcElement.at;
     }
     if (playerLeftToLoad == -1) {
-        var paused = player.paused;
+        let paused = player.paused;
         if (!paused) {
             play();
         }
@@ -354,7 +357,7 @@ document.addEventListener('keydown', e => {
 
             if (new Set(['ArrowUp', 'ArrowDown']).has(e.code)) {
                 e.preventDefault();
-                var temp = null;
+                let temp = null;
                 if (temp === null && lastHighlighted !== null) {
                     temp = e.code === 'ArrowUp' ? lastHighlighted[0].para.previousSibling : lastHighlighted[lastHighlighted.length-1].para.nextSibling;
                 }
@@ -363,7 +366,7 @@ document.addEventListener('keydown', e => {
                 }
                 if (temp !== null) {
                     temp = temp.childNodes;
-                    for (var i = 0; i < temp.length; i++) {
+                    for (let i = 0; i < temp.length; i++) {
                         if (temp[i].hasOwnProperty('at')) {
                             player.currentTime = (temp[i].at + temp[i].at) / 2;
                             return true;
@@ -375,10 +378,10 @@ document.addEventListener('keydown', e => {
             else if (new Set(['ArrowLeft', 'ArrowRight']).has(e.code)) {
                 e.preventDefault();
                 if (lastHighlighted === null) {
-                    var line = paras[0], temp = line.childNodes;
-                    for (var i = 0; i < temp.length; i++) {
+                    let line = paras[0], temp = line.childNodes;
+                    for (let i = 0; i < temp.length; i++) {
                         if (temp[i].hasOwnProperty('at')) {
-                            var word = temp[i];
+                            let word = temp[i];
                             player.currentTime = (word.at + word.atEnd) / 2;
                             break
                         }
@@ -443,10 +446,10 @@ function posMoved() {
 }
 
 function bisect(target, handler, invert) {
-    var start = 0, end = target.length - 1;
-    var valid = null;
+    let start = 0, end = target.length - 1;
+    let valid = null;
     while (start != end) {
-        var mid = Math.floor((start + end) / 2);
+        let mid = Math.floor((start + end) / 2);
         if (handler(target[mid])) {
             if (invert) {
                 end = mid;
@@ -474,19 +477,19 @@ function updateScrolls() {
         return;
     }
 
-    var pos = document.getElementById("pos"), loc = pos.value / pos.max, 
+    let pos = document.getElementById("pos"), loc = pos.value / pos.max, 
         temp = [window.innerHeight, paras[paras.length - 1].getBoundingClientRect().bottom, loc];
     if (temp[0] == scrollState[0] && temp[1] == scrollState[1] && temp[2] == scrollState[2]) {
         return;
     }
     scrollState = temp;
 
-    var pageStart = bisect(paras, e => e.getBoundingClientRect().bottom >= 50, true), 
+    let pageStart = bisect(paras, e => e.getBoundingClientRect().bottom >= 50, true), 
         pageEnd = bisect(paras, e => e.getBoundingClientRect().top <= window.innerHeight, false);
 
     if (pageStart !== null && pageEnd !== null) {
         function calcPerc(e, invert) {
-            var rect = e.getBoundingClientRect(), 
+            let rect = e.getBoundingClientRect(), 
                 perc = (invert ? (window.innerHeight - rect.top) : (rect.bottom - 50)) / (rect.bottom - rect.top);
             perc = perc < 0 ? 0 : (perc > 1 ? 1 : perc);
             if (invert) {
@@ -499,7 +502,7 @@ function updateScrolls() {
         pageStart = calcPerc(pageStart, false) ;
         pageEnd = calcPerc(pageEnd, true) ;
 
-        var done = '#555', togo = '#333', page = '#66a', view = 3;
+        let done = '#555', togo = '#333', page = '#66a', view = 3;
         if (pageEnd <= loc) {
             view = 1;
         } else if (pageStart >= loc) {
@@ -509,7 +512,7 @@ function updateScrolls() {
         loc = `calc((100% - 26px) * ${loc} + 13px)`;
         pageStart = `calc((100% - 26px) * ${pageStart} + 13px)`;
         pageEnd = `calc((100% - 26px) * ${pageEnd} + 13px)`;
-        var temp = '';
+        let temp = '';
         if (view == 1) {
             temp = `,${done} 0% ${pageStart},${page} ${pageStart} ${pageEnd},${done} ${pageStart} ${loc},${togo} ${loc} 100%`;
         } else if (view == 2) {
@@ -527,38 +530,38 @@ function posChanging() {
 }
 
 function hideDrop() {
-    var drop = document.getElementById("dropdown");
+    let drop = document.getElementById("dropdown");
     if (drop.className == "dropdown showDrop") {
         drop.className = "dropdown hideDrop";
     }
-    var setpos = document.getElementById("setpos");
+    let setpos = document.getElementById("setpos");
     if (setpos.className == "dropdown showDrop") {
         setpos.className = "dropdown hideDrop";
     }
-    var overlay = document.getElementById("overlay");
+    let overlay = document.getElementById("overlay");
     overlay.className = "overlay hidden";
 }
 
 function posSelected(e) {
     hideDrop();
     e.preventDefault = true;
-    var newPos = document.getElementById('enteredPos').value;
+    let newPos = document.getElementById('enteredPos').value;
     if (newPos.includes(":") || newPos.includes(".") || newPos.includes("-") || newPos.includes(",") || newPos.includes(" ")) {
         newPos = newPos.replace(/[,. -]/g, ":");
         newPos = newPos.split(":");
         if (newPos.length == 3 || newPos.length == 2) {
-            var h = parseInt(newPos.length == 3 ? newPos[0] : '0'), 
+            let h = parseInt(newPos.length == 3 ? newPos[0] : '0'), 
                 m = parseInt(newPos.length == 3 ? newPos[1] : newPos[0]), 
                 s = parseInt(newPos.length == 3 ? newPos[2] : newPos[1]);
             if (h >= 0 && h <= 99 && m >= 0 && m <= 59 && s >= 0 && s <= 59) {
-                var temp = h * 3600 + m * 60 + s;
+                let temp = h * 3600 + m * 60 + s;
                 if (temp >= 0 && temp <= 43200) {
                     move(h * 3600 + m * 60 + s);
                 }
             }
         }
     } else {
-        var temp = parseFloat(newPos);
+        let temp = parseFloat(newPos);
         if (temp >= 0 && temp <= 60) {
             move(temp * 60);
         } else if (temp > 60 && temp <= 43200) {
@@ -570,7 +573,7 @@ function posSelected(e) {
 }
 
 function showLinks() {
-    var drop = document.getElementById("dropdown");
+    let drop = document.getElementById("dropdown");
     if (!drop.hasOwnProperty('eventSetup')) {
         drop.eventSetup = true;
         drop.addEventListener('animationend', (e) => {
@@ -584,15 +587,15 @@ function showLinks() {
         hideDrop();
     } else {
         drop.className = "dropdown showDrop";
-        var overlay = document.getElementById("overlay");
+        let overlay = document.getElementById("overlay");
         overlay.className = "overlay";
     }
 }
 
 function showPos() {
-    var enteredPos = document.getElementById('enteredPos');
+    let enteredPos = document.getElementById('enteredPos');
     enteredPos.value = getTick(player.currentTime);
-    var setpos = document.getElementById("setpos");
+    let setpos = document.getElementById("setpos");
     if (!setpos.hasOwnProperty('eventSetup')) {
         setpos.eventSetup = true;
         setpos.addEventListener('animationend', (e) => {
@@ -601,19 +604,19 @@ function showPos() {
             }
         });
     }
-    var drop = document.getElementById("dropdown");
+    let drop = document.getElementById("dropdown");
     drop.className = "dropdown hideDrop hidden";
 
     setpos.className = "dropdown showDrop";
-    var overlay = document.getElementById("overlay");
+    let overlay = document.getElementById("overlay");
     overlay.className = "overlay";
 
     enteredPos.focus();
     enteredPos.select();
 }
 
-var clipboard = (function(window, document, navigator) {
-    var textArea, copy;
+let clipboard = (function(window, document, navigator) {
+    let textArea, copy;
 
     function isOS() {
         return navigator.userAgent.match(/ipad|iphone/i);
@@ -626,7 +629,7 @@ var clipboard = (function(window, document, navigator) {
     }
 
     function selectText() {
-        var range, selection;
+        let range, selection;
 
         if (isOS()) {
             range = document.createRange();
@@ -657,7 +660,7 @@ var clipboard = (function(window, document, navigator) {
 })(window, document, navigator);
 
 function getLink() {
-    var uri = window.location.href.split("#")[0] + "#" + Math.floor(player.currentTime * 10);
+    let uri = window.location.href.split("#")[0] + "#" + Math.floor(player.currentTime * 10);
     clipboard.copy(uri);
     alert("Link copied to clipboard");
     hideDrop();
@@ -676,18 +679,18 @@ function onClickToJump() {
 
 function setSpeed(val, target) {
     player.playbackRate = val;
-    var other = ['0_5', '1_0', '1_25', '1_5', '1_75', '2_0', '2_5', '3_0'];
-    for (var i = 0; i < other.length; i++) {
+    let other = ['0_5', '1_0', '1_25', '1_5', '1_75', '2_0', '2_5', '3_0'];
+    for (let i = 0; i < other.length; i++) {
         document.getElementById('speed_' + other[i]).className = (other[i] == target ? "util sel" : "util nosel");
     }
 }
 
 function setSize(val, target) {
-    var perc = document.documentElement.scrollTop / document.documentElement.scrollHeight;
+    let perc = document.documentElement.scrollTop / document.documentElement.scrollHeight;
     document.documentElement.style.setProperty("--content-size", val + "%");
     document.documentElement.scrollTop = document.documentElement.scrollHeight * perc;
-    var other = ['100', '125', '150', '200'];
-    for (var i = 0; i < other.length; i++) {
+    let other = ['100', '125', '150', '200'];
+    for (let i = 0; i < other.length; i++) {
         document.getElementById('size_' + other[i]).className = (other[i] == target ? "util sel" : "util nosel");
     }
 }
@@ -726,9 +729,9 @@ function playerLoaded() {
         if ('mediaSession' in navigator) {
             const ms = navigator.mediaSession;
             if (ms) {
-                var title = "Podcast Episode", album = "Podcasts";
+                let title = "Podcast", album = "Scott's Podcasts";
                 if (typeof titleMeta !== 'undefined' && titleMeta !== null && titleMeta.length > 0) {
-                    var temp = JSON.parse(atob(titleMeta));
+                    let temp = JSON.parse(atob(titleMeta));
                     if (temp['link_title'].length > 0) {
                         title = temp['link_title'];
                     }
@@ -763,7 +766,7 @@ function playerLoaded() {
             }
         }
 
-        var dur = player.duration;
+        let dur = player.duration;
         document.getElementById("pos").max = dur * 10;
 
         paras.forEach(e => {
@@ -775,7 +778,7 @@ function playerLoaded() {
         posChanging();
 
         if (player.newTarget !== null) {
-            var temp = player.newTarget;
+            let temp = player.newTarget;
             player.newTarget = null;
             move(temp);
         }
@@ -834,11 +837,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
     player.newTarget = null;
 
 
-    var targetPos = null;
+    let targetPos = null;
     
     if (targetPos === null) {
         try {
-            var temp = getParam("start");
+            let temp = getParam("start");
             if (temp !== null && temp.length > 0) {
                 targetPos = parseFloat(temp) / 10;
             }
@@ -846,7 +849,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }
     if (targetPos === null) {
         try {
-            var temp = window.location.hash;
+            let temp = window.location.hash;
             if (temp.length > 1) {
                 targetPos = parseFloat(temp.substr(1)) / 10;
             }
@@ -854,7 +857,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }
     if (targetPos === null) {
         try {
-            var tempID = window.localStorage.getItem('wordID'), 
+            let tempID = window.localStorage.getItem('wordID'), 
                 tempPos = window.localStorage.getItem('pos');
             if (tempID == wordID) {
                 tempPos = parseFloat(tempPos);
@@ -876,7 +879,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         playerLoaded();
     });
     player.addEventListener("timeupdate", function () {
-        var at = player.currentTime;
+        let at = player.currentTime;
         if (player.paused == playerIsPlaying) {
             player.dispatchEvent(new CustomEvent(player.paused ? 'pause' : 'play'));
         }
@@ -884,14 +887,14 @@ document.addEventListener("DOMContentLoaded", function(event) {
             document.getElementById("pos").value = at * 10;
             posChanging();
         }
-        var lastElem = null, 
+        let lastElem = null, 
             highlightTime = 1.0 * player.playbackRate;
 
         if (lastHighlighted !== null) {
             if (at >= lastHighlighted[0].at && at < lastHighlighted[lastHighlighted.length-1].atEnd) {
                 lastElem = lastHighlighted[0];
             } else if (lastHighlighted[lastHighlighted.length-1].hasOwnProperty("next")) {
-                var started = lastHighlighted[lastHighlighted.length-1].next, ended = started;
+                let started = lastHighlighted[lastHighlighted.length-1].next, ended = started;
 
                 while (true) {
                     if (at >= started.at && at < ended.atEnd) {
@@ -913,7 +916,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             lastElem = bisect(byTime, e => e.at <= at, false);
         }
 
-        var isIn = false;
+        let isIn = false;
         if (lastElem !== null && lastHighlighted !== null) {
             lastHighlighted.forEach((e) => {
                 if (e === lastElem) {
@@ -926,7 +929,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 window.localStorage.setItem('wordID', wordID);
                 window.localStorage.setItem('pos', at);
             }
-            var stack = [lastElem];
+            let stack = [lastElem];
             lastElem.className = 'current';
             while ((stack[stack.length-1].atEnd - stack[0].at) <= highlightTime && stack[stack.length-1].hasOwnProperty("next")) {
                 stack[stack.length-1].next.className = 'current';
@@ -938,6 +941,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 stack[0].className = 'current left';
                 stack[stack.length - 1].className = 'current right';
             }
+            stack.forEach((e) => {
+                e.className += e.isDiff ? ' diff': '';
+            });
             if (autoScroll) {
                 stack[stack.length-1].scrollIntoView({
                     "block": "nearest",
@@ -946,7 +952,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
             if (lastHighlighted !== null) {
                 lastHighlighted.forEach((e) => {
-                    e.className = 'word';
+                    e.className = 'word' + (e.isDiff ? ' diff' : '');
                     e.para.className = '';
                 });
             }
@@ -974,57 +980,61 @@ document.addEventListener("DOMContentLoaded", function(event) {
     });
 
     decodeData(words).then((words) => {
-        var children = [], lastPara = null, lastAt = null, lastHeader = 0;
-        for (var i = 0; i < words['word'].length; i++) {
-            var at = words['off'][i], word = words['word'][i];
+        let children = [], lastPara = null, lastAt = 0, lastHeader = 0, lastSpeakerID=' ';
+        for (let i = 0; i < words['word'].length; i++) {
+            let at = words['off'][i], word = words['word'][i], para = words['para'].charAt(i), speakerID = words['speaker'].charAt(i);
             at += lastAt;
             lastAt = at;
             at /= 100;
-            if (word == '') {
+            if (para == '.') {
                 lastPara = document.createElement("p");
                 lastPara.at = at;
                 lastPara.atEnd = at;
-                var temp = document.createElement("span");
+                let temp = document.createElement("span");
                 temp.className = "timecode";
                 temp.appendChild(document.createTextNode(getTick(at) + ":"));
                 lastPara.appendChild(temp);
                 children.push(lastPara);
                 paras.push(lastPara);
-            } else {
-                lastPara.children[lastPara.children.length-1].textContent += ' ';
-                lastPara.atEnd = at;
+            }
+            lastPara.children[lastPara.children.length-1].textContent += ' ';
+            lastPara.atEnd = at;
 
-                var temp = document.createElement("span");
-
-                if (byTime.length > 0) {
-                    byTime[byTime.length - 1].atEnd = at;
-                    byTime[byTime.length - 1].next = temp;
-                }
-
-                temp.at = at;
-                temp.onclick = move;
-                temp.className = "word";
-                if (word.search(/^[A-Z]: /) == 0) {
-                    var speaker = document.createElement("span");
-                    speaker.textContent = word.substr(0, 3);
+            let temp = document.createElement("span");
+            if (byTime.length > 0) {
+                byTime[byTime.length - 1].atEnd = at;
+                byTime[byTime.length - 1].next = temp;
+            }
+            temp.at = at;
+            temp.onclick = move;
+            temp.className = "word";
+            if (para == '.' && speakerID != lastSpeakerID) {
+                if (speakerID != ' ') {
+                    let speaker = document.createElement("span");
+                    speaker.textContent = speakerID + ": ";
                     speaker.className = "speaker";
                     lastPara.appendChild(speaker);
-                    temp.appendChild(document.createTextNode(word.substr(3)));
-                } else {
-                    temp.appendChild(document.createTextNode(word));
                 }
-                temp.para = lastPara;
-                lastPara.appendChild(temp);
-                byTime.push(temp);
+                lastSpeakerID = speakerID;
             }
+            if (speakerID != lastSpeakerID) {
+                temp.className += " diff";
+                temp.isDiff = true;
+            } else {
+                temp.isDiff = false;
+            }
+            temp.appendChild(document.createTextNode(word));
+            temp.para = lastPara;
+            lastPara.appendChild(temp);
+            byTime.push(temp);
         };
         if (byTime.length > 0) {
-            byTime[byTime.length - 1].atEnd = at + 3600;
+            byTime[byTime.length - 1].atEnd = (lastAt/100) + 3600;
         }
         document.getElementById("pos").max = (lastAt/100) * 10;
         document.getElementById("transcript").append(...children);
 
-        var hidden, visibilityChange;
+        let hidden, visibilityChange;
         if (typeof document.hidden !== "undefined") {
             hidden = "hidden";
             visibilityChange = "visibilitychange";

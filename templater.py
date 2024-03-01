@@ -28,11 +28,14 @@ class IsParagraph:
         misc_speaker = None
         for dur, speaker_id in temp:
             if misc_speaker is None:
-                self.speakers[speaker_id] = chr(ord('A') + (len(self.speakers) % 26)) + ": "
+                self.speakers[speaker_id] = chr(ord('A') + (len(self.speakers) % 26))
                 if dur <= 60:
                     misc_speaker = self.speakers[speaker_id]
             else:
                 self.speakers[speaker_id] = misc_speaker
+
+    def encode_speaker(self, speaker):
+        return self.speakers.get(speaker, ' ')
 
     def check(self, *args):
         if isinstance(args[0], dict):
@@ -115,14 +118,17 @@ def fill_out(words, mp3_fn):
             para_break = True
         
         if i == 0 or (speaker != last_speaker and is_para.was_sentence):
-            if len(is_para.speakers) > 1:
-                word = is_para.speakers.get(speaker, '') + word
             if i > 0:
                 para_break = True
             last_speaker = speaker
 
         if i == len(words) - 1:
-            paragraph.append({'word': word, 'start': start, 'end': end})
+            paragraph.append({
+                'word': word, 
+                'start': start, 
+                'end': end, 
+                'speaker_encoded': is_para.encode_speaker(speaker),
+            })
             para_break = True
 
         if para_break:
@@ -131,11 +137,16 @@ def fill_out(words, mp3_fn):
             start_time = start
 
         if len(word) > 0:
-            paragraph.append({'word': word, 'start': start, 'end': end})
+            paragraph.append({
+                'word': word, 
+                'start': start, 
+                'end': end, 
+                'speaker_encoded': is_para.encode_speaker(speaker),
+            })
 
     # Create a dump out of final data to send to the webpage, the webpage itself
     # will merge these to try to prevent too much animated noise
-    simple = {'off': [], 'word': []}
+    simple = {'off': [], 'word': [], 'speaker': [], 'para': []}
     last_pos, last_value = 0, 0
     transcript = ""
     def track_pos(value):
@@ -145,16 +156,17 @@ def fill_out(words, mp3_fn):
         ret = value - last_pos
         last_pos = value
         return ret
+
     for i, paragraph in enumerate(paragraphs):
         merged = []
         for word in paragraph:
             merged.append(word)
 
-        simple['off'].append(track_pos(merged[0]['start']))
-        simple['word'].append('')
-        for word in merged:
+        for word_number, word in enumerate(merged):
             simple['off'].append(track_pos(word['start']))
             simple['word'].append(word['word'].replace("|", "/"))
+            simple['speaker'].append(word.get('speaker_encoded', ' '))
+            simple['para'].append('.' if word_number == 0 else ' ')
 
     fn = mp3_fn.replace("\\", "/").split("/")[-1]
 
@@ -173,6 +185,11 @@ def encode_words(value):
     
     # Turn the list of words to a single string seperated by a pipe.
     value['word'] = "|".join(value['word'])
+    # The list of paragraph starts is just a "." for a paragraph start,
+    # and " " otherwise, so turn it into a long string
+    value['para'] = "".join(value['para'])
+    # Speakers are A-Z, or " " for no speaker, so again, a simlpe string
+    value['speaker'] = "".join(value['speaker'])
     # Place the rest in a compressed json dump
     value = json.dumps(value, separators=(",", ":"))
     value = value.encode("utf-8")
