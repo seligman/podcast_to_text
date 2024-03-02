@@ -306,6 +306,7 @@ function getParam(name, decode) {
 
 let words = /* |SWords| */{WORDS_VAR}/* |EWords| */,
     wordID = "{{WORD_ID}}",
+    expectedDur = {EXPECTED_DUR},
     byTime = [],
     paras = [],
     parasReady = false,
@@ -524,8 +525,10 @@ function updateScrolls() {
     }
 }
 
-function posChanging() {
-    updateScrolls();
+function posChanging(includeScrolls=true) {
+    if (includeScrolls) {
+        updateScrolls();
+    }
     document.getElementById("posText").innerHTML = getTick(pos.value / 10) + '<br><font size="-1">' + ('-' + getTick((pos.max - pos.value) / 10)) + "</font>";
 }
 
@@ -766,7 +769,7 @@ function playerLoaded() {
             }
         }
 
-        let dur = player.duration;
+        let dur = expectedDur !== null ? expectedDur : player.duration;
         document.getElementById("pos").max = dur * 10;
 
         paras.forEach(e => {
@@ -833,6 +836,11 @@ async function decodeData(value) {
 }
 
 document.addEventListener("DOMContentLoaded", function(event) {
+    if (expectedDur !== null) {
+        document.getElementById("pos").max = expectedDur * 10;
+        posChanging(false);
+    }
+
     player = document.getElementById('player');
     player.newTarget = null;
 

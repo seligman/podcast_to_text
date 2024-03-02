@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from hashlib import sha256
+from mp3_splitter import ReadMP3
 import base64
 import gzip
 import html
@@ -94,6 +95,13 @@ def fill_out(words, mp3_fn):
     with open("template.html", "rt") as f:
         data = f.read()
     
+    # Get the duration from the MP3
+    with open(mp3_fn, "rb") as f:
+        mp3 = ReadMP3(f)
+        duration = 0
+        while mp3.next():
+            duration += mp3.samples_per_frame / mp3.sample_rate
+
     # For engines that output phrases instead of words, invent where the boundaries are
     if " " in "".join(x[0] for x in words):
         # There's a space in at least on word, so pass it off to our helper to split up
@@ -174,6 +182,7 @@ def fill_out(words, mp3_fn):
     data = data.replace("{{MP3_NAME}}", html.escape(fn))
     data = data.replace("{{WORD_ID}}", sha256(fn.encode("utf-8")).hexdigest()[:10])
     data = data.replace("{WORDS_VAR}", encode_words(simple))
+    data = data.replace("{EXPECTED_DUR}", json.dumps(duration))
 
     data = "".join(x.strip() for x in data.split("\n"))
 
