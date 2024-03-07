@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__version__ = 46        # Version of this package
+__version__ = 47        # Version of this package
 DEBUG_PRINT = False     # Set this to True to log all print() output
 DEBUG_INPUT = False     # Set this to True to log all input received
 DELAY_INPUT = False     # Set this to True to take 1 second to process each key
@@ -159,6 +159,15 @@ def _debug_getch(value, call_no):
                     msg = f"0x{ord(value):02x}"
             else:
                 msg = json.dumps(value)
+        elif isinstance(value, bytes):
+            pretty, hex = "", ""
+            for x in value:
+                if x < 33 or x > 127 or x == 92:
+                    pretty += "."
+                else:
+                    pretty += chr(x)
+                hex += f" {x:02x}"
+            msg = "Byte: " + pretty + " -" + hex
         else:
             msg = str(value)
         with open("_getch_log_", "a") as f:
