@@ -299,7 +299,7 @@ input[type="text"],input[type="number"],textarea {
 <script>
 
 function getParam(name, decode) {
-    let ret = new URLSearchParams(location.search).get(name);
+    let ret = urlQuery.get(name);
     if (ret !== null && decode) { ret = atob(ret); }
     return ret
 }
@@ -313,14 +313,16 @@ let words = /* |SWords| */{WORDS_VAR}/* |EWords| */,
     lastHighlighted = null,
     isUserMoving = false,
     scrollState = [-1, -1, -1],
-    playerLeftToLoad = 2,
+    playerLeftToLoad = 3,
     playerIsPlaying = false,
     jumpOnClick = true,
     autoScroll = true,
     wakeLock = null,
     isInterrupted = false,
     player = null,
-    requestWakeLock = null;
+    requestWakeLock = null,
+    urlQuery = new URLSearchParams(window.location.search),
+    urlHash = window.location.hash;
 
 function move(e) {
     if (!jumpOnClick) {
@@ -663,7 +665,7 @@ let clipboard = (function(window, document, navigator) {
 })(window, document, navigator);
 
 function getLink() {
-    let uri = window.location.href.split("#")[0] + "#" + Math.floor(player.currentTime * 10);
+    let uri = window.location.href.split("#")[0].split("?")[0] + "#" + Math.floor(player.currentTime * 10);
     clipboard.copy(uri);
     alert("Link copied to clipboard");
     hideDrop();
@@ -836,6 +838,8 @@ async function decodeData(value) {
 }
 
 document.addEventListener("DOMContentLoaded", function(event) {
+    window.history.replaceState({}, null, window.location.href.split("?")[0].split("#")[0]);
+
     if (expectedDur !== null) {
         document.getElementById("pos").max = expectedDur * 10;
         posChanging(false);
@@ -857,7 +861,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }
     if (targetPos === null) {
         try {
-            let temp = window.location.hash;
+            let temp = urlHash;
             if (temp.length > 1) {
                 targetPos = parseFloat(temp.substr(1)) / 10;
             }
@@ -1076,6 +1080,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         document.addEventListener('scroll', updateScrolls);
         window.addEventListener('blur', windowBlur);
         setupWakeLock();
+        playerLoaded();
     });
 });
 </script>
