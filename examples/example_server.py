@@ -2,11 +2,18 @@
 
 # Extend http.server to include support for range requests for demo purposes
 
-import os
-import argparse
+from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, HTTPServer
+import argparse
+import os
+import sys
+if sys.version_info >= (3, 11): from datetime import UTC
+else: import datetime as datetime_fix; UTC=datetime_fix.timezone.utc
 
 class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
+    def log_request(self, *args, **kw):
+        print(f"{datetime.now(UTC).strftime('%d %H:%M:%S')}: {self.command} '{self.path}' [{self.headers.get('Range', '-')}]")
+
     def send_head(self):
         path = self.translate_path(self.path)
         ctype = self.guess_type(path)
@@ -29,7 +36,7 @@ class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
                 end = int(end)
             except ValueError as e:
                 self.send_error(400, 'invalid range')
-            start = size-end
+            start = size - end
         else:
             try:
                 start = int(start)
@@ -49,15 +56,14 @@ class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
         end = min(end, size-1)
         self.range = (start, end)
 
-        l = end-start+1
+        l = end - start + 1
         if 'Range' in self.headers:
             self.send_response(206)
         else:
             self.send_response(200)
         self.send_header('Content-type', ctype)
         self.send_header('Accept-Ranges', 'bytes')
-        self.send_header('Content-Range',
-                         'bytes %s-%s/%s' % (start, end, size))
+        self.send_header('Content-Range', f'bytes {start}-{end}/{size}')
         self.send_header('Content-Length', str(l))
         self.send_header('Last-Modified', self.date_time_string(fs.st_mtime))
         self.end_headers()
@@ -71,11 +77,13 @@ class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
 
         start, end = self.range
         infile.seek(start)
-        bufsize = 64*1024
-        while True:
-            buf = infile.read(bufsize)
+        bufsize = 64 * 1024
+        left = (end - start) + 1
+        while left > 0:
+            buf = infile.read(min(left, bufsize))
             if not buf:
                 break
+            left -= len(buf)
             outfile.write(buf)
 
 if __name__ == '__main__':
