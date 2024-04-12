@@ -8,6 +8,7 @@ class ReadMP3:
 
     def next(self):
         while True:
+            self.loc = self.f.tell()
             self.header = self.f.read(4)
             if len(self.header) < 4:
                 return False
@@ -70,62 +71,70 @@ class ReadMP3:
                     self.data = self.f.read(self.size - 4)
                     return True
 
-def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None, allow_large_final_segment=False, fn_extra=""):
-    ret = []
-    cur_len = 0
-    cur_buffer = io.BytesIO()
-    chunk_at = 0
-    offset = 0
+def split_array(a, n):
+    k, m = divmod(len(a), n)
+    return [a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n)]
 
+def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None, fn_extra=""):
+    ret = []
+
+    offsets = []
+    total_len = 0
+    batch_size = 30
     with open(fn, "rb") as f:
         mp3 = ReadMP3(f)
+        offsets.append([0, 0])
         while mp3.next():
-            new_chunk = False
-            if duration_in_seconds is not None and (cur_len / mp3.sample_rate) >= duration_in_seconds:
-                new_chunk = True
-            if size_in_bytes is not None and cur_buffer.tell() >= size_in_bytes:
-                new_chunk = True
-            if new_chunk:
-                ret.append({
-                    'offset': chunk_at / mp3.sample_rate,
-                    'duration': (offset - chunk_at) / mp3.sample_rate,
-                    'fn': f"{fn}{fn_extra}_chunk_{len(ret):04d}.mp3",
-                    'size': cur_buffer.tell(),
-                })
-                with open(ret[-1]['fn'], "wb") as f_dest:
-                    cur_buffer.seek(0, 0)
-                    f_dest.write(cur_buffer.read())
-                    cur_buffer = io.BytesIO()
-                    cur_len = 0
-                chunk_at = offset
-            cur_len += mp3.samples_per_frame
-            cur_buffer.write(mp3.header)
-            cur_buffer.write(mp3.data)
-            offset += mp3.samples_per_frame
+            total_len += mp3.samples_per_frame
+            if total_len / mp3.sample_rate > len(offsets) * batch_size:
+                offsets.append([mp3.loc, 0])
+            offsets[-1][1] += mp3.samples_per_frame
 
-        if cur_len > 0:
-            append_to_previous = False
+        base_offsets = offsets
+        offsets = [offsets]
+        count = 1
+        while True:
+            need_more = False
+            if size_in_bytes is not None:
+                if max((x[-1][1] - x[0][0]) for x in offsets) > size_in_bytes:
+                    need_more = True
             if duration_in_seconds is not None:
-                if allow_large_final_segment:
-                    if len(ret) > 0:
-                        if (cur_len / mp3.sample_rate) < (duration_in_seconds / 2):
-                            append_to_previous = True
-            if append_to_previous:
-                ret[-1]['duration'] += (offset - chunk_at) / mp3.sample_rate
-                ret[-1]['size'] += cur_buffer.tell()
-                with open(ret[-1]['fn'], "ab") as f_dest:
-                    cur_buffer.seek(0, 0)
-                    f_dest.write(cur_buffer.read())
+                if max(len(x) for x in offsets) * batch_size > duration_in_seconds:
+                    need_more = True
+            if need_more:
+                count += 1
+                offsets = split_array(base_offsets, count)
             else:
-                ret.append({
-                    'offset': chunk_at / mp3.sample_rate,
-                    'duration': (offset - chunk_at) / mp3.sample_rate,
-                    'fn': f"{fn}{fn_extra}_chunk_{len(ret):04d}.mp3",
-                    'size': cur_buffer.tell(),
-                })
-                with open(ret[-1]['fn'], "wb") as f_dest:
-                    cur_buffer.seek(0, 0)
-                    f_dest.write(cur_buffer.read())
+                break
+
+        offset = 0
+        for i, chunk in enumerate(offsets):
+            duration = sum(x[1] for x in chunk)
+            new_entry = {
+                'offset': offset / mp3.sample_rate,
+                'duration': duration / mp3.sample_rate,
+                'fn': f"{fn}{fn_extra}_chunk_{len(ret):04d}.mp3",
+            }
+            offset += duration
+            if i == len(offsets) - 1:
+                left = -1
+            else:
+                left = offsets[i+1][0][0] - chunk[0][0]
+            wrote = 0
+            f.seek(chunk[0][0], os.SEEK_SET)
+            with open(new_entry['fn'], "wb") as f_dest:
+                while True:
+                    temp = f.read(1048576 if left == -1 else min(1048576, left))
+                    if len(temp) == 0:
+                        break
+                    wrote += len(temp)
+                    f_dest.write(temp)
+                    if left > 0:
+                        left -= len(temp)
+                        if left == 0:
+                            break
+            new_entry['size'] = wrote
+            ret.append(new_entry)
 
     return ret
 
