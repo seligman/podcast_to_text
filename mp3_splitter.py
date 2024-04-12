@@ -1,25 +1,36 @@
 #!/usr/bin/env python3
 
-import io, sys
+import sys, os
 
 class ReadMP3:
     def __init__(self, f):
         self.f = f
+        self.tell = 0
+        self.beat_rate = 14112000
+
+    def read(self, bytes):
+        ret = self.f.read(bytes)
+        self.tell += len(ret)
+        return ret
+    
+    def seek(self, offset, whence):
+        self.tell = self.f.seek(offset, whence)
+        return self.tell
 
     def next(self):
         while True:
-            self.loc = self.f.tell()
-            self.header = self.f.read(4)
+            self.loc = self.tell
+            self.header = self.read(4)
             if len(self.header) < 4:
                 return False
 
             if self.header[:3] == b'TAG':
-                self.f.read(124)
+                self.read(124)
             elif self.header[:3] == b'ID3':
-                self.f.read(2)
-                skip = self.f.read(4)
+                self.read(2)
+                skip = self.read(4)
                 skip = (skip[0] << 21) + (skip[1] << 14) + (skip[2] << 7) + skip[3]
-                self.f.read(skip)
+                self.read(skip)
             elif self.header[0] == 0xff and (self.header[1] >> 4) == 0xf:
                 valid = True
                 if valid:
@@ -68,7 +79,8 @@ class ReadMP3:
                     self.padding_size = {1: 4, 2: 1, 3: 1}[self.layer]
                     self.samples_per_frame = {(1, 1): 384, (1, 2): 1152, (1, 3): 1152, (2, 1): 192, (2, 2): 1152, (2, 3): 576}[(self.mpeg_ver, self.layer)]
                     self.size = self.samples_per_frame // 8 * (self.bitrate * 1000) // self.sample_rate + (self.padding * self.padding_size)
-                    self.data = self.f.read(self.size - 4)
+                    self.data = self.read(self.size - 4)
+                    self.beats = self.samples_per_frame * (self.beat_rate / self.sample_rate)
                     return True
 
 def split_array(a, n):
@@ -85,10 +97,10 @@ def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None, fn_extra=""):
         mp3 = ReadMP3(f)
         offsets.append([0, 0])
         while mp3.next():
-            total_len += mp3.samples_per_frame
-            if total_len / mp3.sample_rate > len(offsets) * batch_size:
+            total_len += mp3.beats
+            if total_len / mp3.beat_rate > len(offsets) * batch_size:
                 offsets.append([mp3.loc, 0])
-            offsets[-1][1] += mp3.samples_per_frame
+            offsets[-1][1] += mp3.beats
 
         base_offsets = offsets
         offsets = [offsets]
@@ -111,8 +123,8 @@ def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None, fn_extra=""):
         for i, chunk in enumerate(offsets):
             duration = sum(x[1] for x in chunk)
             new_entry = {
-                'offset': offset / mp3.sample_rate,
-                'duration': duration / mp3.sample_rate,
+                'offset': offset / mp3.beat_rate,
+                'duration': duration / mp3.beat_rate,
                 'fn': f"{fn}{fn_extra}_chunk_{len(ret):04d}.mp3",
             }
             offset += duration
