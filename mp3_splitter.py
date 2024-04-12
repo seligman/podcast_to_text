@@ -150,11 +150,6 @@ def main():
     for chunk in chunks:
         print(f"Chunk: {chunk['fn']}, Offset: {chunk['offset']:.2f}, Duration: {chunk['duration']:.2f}, Size: {chunk['size']:,}")
 
-    print("Creating 5 minute chunks (allow larger last segment):")
-    chunks = chunk_mp3(fn, duration_in_seconds=300, fn_extra="_by_time_pad", allow_large_final_segment=True)
-    for chunk in chunks:
-        print(f"Chunk: {chunk['fn']}, Offset: {chunk['offset']:.2f}, Duration: {chunk['duration']:.2f}, Size: {chunk['size']:,}")
-
     print("Creating 10 megabyte chunks:")
     chunks = chunk_mp3(fn, size_in_bytes=10485760, fn_extra="_by_size")
     for chunk in chunks:
