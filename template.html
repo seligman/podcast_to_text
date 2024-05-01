@@ -6,308 +6,319 @@
 <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto" />
 <meta name="viewport" content="width=device-width"/>
 <meta name="viewport" content="initial-scale=1.0"/>
-<title>{{TITLE}}</title>
+<meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#222">
+<title>[[TITLE]]</title>
 <style>
-:root {
-    --content-size: 100%;
-    --word-pointer: pointer;
+:root{
+    --content-size:100%;
+    --word-pointer:pointer;
+    --widget-height:62px;
 }
 
 html,
-body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background-color: #333;
-    color: #ccc;
-    font-family: "Roboto", sans-serif;
-    font-size: 12pt;
-    box-sizing: border-box;
+body{
+    height:100%;
+    margin:0;
+    padding:0;
+    border:0;
+    background-color:#333;
+    color:#ccc;
+    font-family:"Roboto",sans-serif;
+    font-size:12pt;
+    box-sizing:border-box;
 }
 
-.overlay {
+.overlay{
     position:fixed;
-    background-color: rgba(0, 0, 0, .25);
+    background-color:rgba(0,0,0,.25);
     top:0;
     left:0;
     width:100%;
     height:100%;
 }
 
-.content {
-    font-size: var(--content-size);
-    padding: 10px;
-    padding-top: 60px;
-    padding-bottom: 30px;
+.content{
+    font-size:var(--content-size);
+    padding:10px;
+    padding-top:60px;
+    padding-bottom:30px;
 }
 
-.cols {
-    display: flex;
-    flex-flow: column;
+.cols{
+    display:flex;
+    flex-flow:column;
 }
 
-.rows {
-    display: flex;
-    flex-flow: row;
+.rows{
+    display:flex;
+    flex-flow:row;
 }
 
-@keyframes fade {
-    0% {opacity: 0;transform:translateX(4em);}
-    100% {opacity: 1;transform:translateX(0em);}
+@keyframes fade{
+    0%{opacity:0;transform:translateX(4em);}
+    100%{opacity:1;transform:translateX(0em);}
 }
 
-@-webkit-keyframes fade {
-    0% {opacity: 0;transform:translateX(4em);}
-    100% {opacity: 1;transform:translateX(0em);}
+@-webkit-keyframes fade{
+    0%{opacity:0;transform:translateX(4em);}
+    100%{opacity:1;transform:translateX(0em);}
 }
 
-@keyframes unfade {
-    0% {opacity: 1;transform:translateX(0em);}
-    100% {opacity: 0;transform:translateX(4em);}
+@keyframes unfade{
+    0%{opacity:1;transform:translateX(0em);}
+    100%{opacity:0;transform:translateX(4em);}
 }
 
-@-webkit-keyframes unfade {
-    0% {opacity: 1;transform:translateX(0em);}
-    100% {opacity: 0;transform:translateX(4em);}
+@-webkit-keyframes unfade{
+    0%{opacity:1;transform:translateX(0em);}
+    100%{opacity:0;transform:translateX(4em);}
 }
 
-.hideDrop {
-    -webkit-animation: unfade 0.25s;
-    animation: unfade 0.25s;
+.hideDrop{
+    -webkit-animation:unfade 0.25s;
+    animation:unfade 0.25s;
 }
 
-.showDrop {
-    -webkit-animation: fade 0.25s;
-    animation: fade 0.25s;
+.showDrop{
+    -webkit-animation:fade 0.25s;
+    animation:fade 0.25s;
 }
 
-.dropdown {
-    position: fixed;
-    top: calc(62px - 10px);
-    width: 10em;
-    left: calc(100% - 10em);
-    align-items: center;
-    padding: 10px;
-    line-height: 150%;
-    background-color: #222;
-    box-shadow: 0 1px 2px hsla(0,0%,0%,0.1), 0 1px 4px hsla(0, 0%, 0%, 0.1), 0 2px 8px hsla(0, 0%, 0%, 0.1);
+.dropdown{
+    position:fixed;
+    top:calc(var(--widget-height) - 10px);
+    width:10em;
+    left:calc(100% - 10em);
+    align-items:center;
+    padding:10px;
+    line-height:150%;
+    background-color:#222;
+    box-shadow:0 1px 2px hsla(0,0%,0%,0.1),0 1px 4px hsla(0,0%,0%,0.1),0 2px 8px hsla(0,0%,0%,0.1);
 }
 
-.util {
-    cursor: pointer;
-    color: #bbf;
-    overflow: hidden;
-    width: 100%;
-    display: block;
+.util{
+    cursor:pointer;
+    color:#bbf;
+    overflow:hidden;
+    width:100%;
+    display:block;
 }
 
-.util:hover {
-    background-color: #559;
+.util:hover{
+    background-color:#559;
 }
 
-.header {
-    align-items: center;
-    background-color: #222;
-    position: fixed;
-    box-sizing: border-box;
-    top: -10px;
-    padding-top: 10px;
-    left: 0;
-    width: 100%;
-    height: 62px;
-    box-shadow: 0 1px 2px hsla(0,0%,0%,0.1), 0 1px 4px hsla(0, 0%, 0%, 0.1), 0 2px 8px hsla(0, 0%, 0%, 0.1);
+.header{
+    align-items:center;
+    background-color:#222;
+    position:fixed;
+    box-sizing:border-box;
+    top:-10px;
+    padding-top:10px;
+    left:0;
+    width:100%;
+    height:var(--widget-height);
+    box-shadow:0 1px 2px hsla(0,0%,0%,0.1),0 1px 4px hsla(0,0%,0%,0.1),0 2px 8px hsla(0,0%,0%,0.1);
 }
 
-.sel::before {
-    content: "\2022\00a0";
+.sel::before{
+    content:"\2022\00a0";
 }
 
-.nosel::before {
-    content: "\00a0\00a0";
+.nosel::before{
+    content:"\00a0\00a0";
 }
 
-.fill {
-    flex: 100%;
+.fill{
+    flex:100%;
 }
 
-.fillToEdge {
-    height: 100%;
-    width: 100%;
+.fillToEdge{
+    height:100%;
+    width:100%;
 }
 
-span.current {
+span.current{
     color:#fff;
     background:#833;
-    cursor: var(--word-pointer);
-    scroll-margin: calc(1.5em + 62px) 0 2.5em 0;
+    cursor:var(--word-pointer);
+    scroll-margin:calc(1.5em + var(--widget-height)) 0 2.5em 0;
 }
 
-span.left {
-    margin-left: -5px;
-    padding-left: 5px;
-    border-radius: 3px 0 0 3px;
+span.left{
+    margin-left:-5px;
+    padding-left:5px;
+    border-radius:3px 0 0 3px;
 }
 
-span.right {
-    border-radius: 0 3px 3px 0;
+span.right{
+    border-radius:0 3px 3px 0;
 }
 
-span.word {
-    cursor: var(--word-pointer);
-    scroll-margin: 2.5em 0;
+span.word{
+    cursor:var(--word-pointer);
+    scroll-margin:2.5em 0;
 }
 
-p {
+p{
     padding:4px 0;
-    margin-left: 2ch;
-    text-indent: -2ch;
-    margin-top: .1em;
-    margin-bottom: .1em;
-    line-height: 1.3;
+    margin-left:2ch;
+    text-indent:-2ch;
+    margin-top:.1em;
+    margin-bottom:.1em;
+    line-height:1.3;
 }
 
-p.current {
-    background-color: #444;
-    box-shadow:4px 0 0 #444, -2ch 0 0 #444;
-    border-radius: 5px;
-    scroll-margin: 2.5em 0;
+p.current{
+    background-color:#444;
+    box-shadow:4px 0 0 #444,-2ch 0 0 #444;
+    border-radius:5px;
+    scroll-margin:2.5em 0;
 }
 
-@media only screen and (max-width: 600px) {
-    :root {
-        --extra_height: 1.3;
+@media only screen and (max-width:600px){
+    :root{
+        --extra_height:1.3;
     }
-    span.current {
-        scroll-margin: calc(1.5em + (62px * var(--extra_height))) 0 2.5em 0;
+    span.current{
+        scroll-margin:calc(1.5em + (var(--widget-height) * var(--extra_height))) 0 2.5em 0;
     }
-    .header {
-        height: calc(62px * var(--extra_height));
+    .header{
+        height:calc(var(--widget-height) * var(--extra_height));
     }
-    .content {
-        padding-top: calc(60px * var(--extra_height));
+    .content{
+        padding-top:calc(60px * var(--extra_height));
     }
-    .playPause {
-        transform: scale(1.9);
+    .playPause{
+        transform:scale(1.9);
     }
-    p {
-        margin-left: 0;
-        text-indent: 0;
+    p{
+        margin-left:0;
+        text-indent:0;
     }
-    p.current {
-        box-shadow:4px 0 0 #444, -4px 0 0 #444;
-    }
-}
-@media only screen and (min-width: 700px) {
-    .content {
-        width: 600px;
-        margin-left: calc((100% - 600px) / 2);
-    }
-    p {
-        margin-left: 0;
+    p.current{
+        box-shadow:4px 0 0 #444,-4px 0 0 #444;
     }
 }
-.timecode {
-    color: #aaa;
+@media only screen and (min-width:700px){
+    .content{
+        width:600px;
+        margin-left:calc((100% - 600px) / 2);
+    }
+    p{
+        margin-left:0;
+    }
+}
+.timecode{
+    color:#aaa;
 }
 
-.speaker {
-    color: #888;
+.speaker{
+    color:#888;
 }
 
-.diff {
-    font-style: italic;
+.diff{
+    font-style:italic;
 }
 
-.hidden {
-    display: none;
+.hidden{
+    display:none;
 }
 
-.playPause {
-    margin-left: 1em;
-    margin-right: 1em;
-    margin-bottom: 5px;
-    margin-top: 5px;
-    cursor: pointer;
+.playPause{
+    margin-left:1em;
+    margin-right:1em;
+    margin-bottom:5px;
+    margin-top:5px;
+    cursor:pointer;
 }
 
-.play .forPause {
-    display: none;
+.play .forPause{
+    display:none;
 }
 
-.slider {
-    appearance: none;
-    height: 15px;
-    margin: 10px;
-    border-radius: 5px;  
-    outline: none;
-    background: #444;
+.slider{
+    appearance:none;
+    height:15px;
+    margin:10px;
+    border-radius:5px; 
+    outline:none;
+    background:#444;
 }
 
-.slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: #bbf;
-    cursor: pointer;
+.slider::-webkit-slider-thumb{
+    appearance:none;
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    background:#bbf;
+    cursor:pointer;
 }
 
-.slider::-moz-range-thumb {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: #bbf;
-    cursor: pointer;
-} 
-
-.link {
-    cursor: pointer;
-    margin: 10px;
-} 
-
-.leftpad {
-    margin: 10px;
+.slider::-moz-range-thumb{
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    background:#bbf;
+    cursor:pointer;
 }
 
-input[type=button],input[type=submit],input[type=reset] {
-    background-color: #444;
-    border: none;
-    color: #f8f8f2;
-    padding: 2pt 20pt;
-    text-decoration: none;
-    cursor: pointer;
-    font-family: Menlo,Monaco,Consolas,monospace;
-    font-size: 12pt;
+.link{
+    cursor:pointer;
+    margin:10px;
 }
 
-input[type="text"],input[type="number"],textarea {
-    background-color: #000;
-    color: #cec;
-    font-family: Menlo,Monaco,Consolas,monospace;
-    font-size: 12pt;
-    margin: 3px;
-    border-top-style: hidden;
-    border-right-style: hidden;
-    border-left-style: hidden;
-    border-bottom-style: solid;
-    border-bottom-width: 1px;
-    border-bottom-color: #a8a8f2;
-    padding: 2px;
+.leftpad{
+    margin:10px;
+}
+
+input[type=button],input[type=submit],input[type=reset]{
+    background-color:#444;
+    border:none;
+    color:#f8f8f2;
+    padding:2pt 20pt;
+    text-decoration:none;
+    cursor:pointer;
+    font-family:Menlo,Monaco,Consolas,monospace;
+    font-size:12pt;
+}
+
+input[type="text"],input[type="number"],textarea{
+    background-color:#000;
+    color:#cec;
+    font-family:Menlo,Monaco,Consolas,monospace;
+    font-size:12pt;
+    margin:3px;
+    border-top-style:hidden;
+    border-right-style:hidden;
+    border-left-style:hidden;
+    border-bottom-style:solid;
+    border-bottom-width:1px;
+    border-bottom-color:#a8a8f2;
+    padding:2px;
 }
 </style>
 <script>
 
+const extraMove=()=>{};
+const extraScript=()=>{};
+const extraSetup=()=>{};
+const meta={
+    words:"[[WORDS_VAR]]",
+    title:"[[TITLE_META]]",
+    id:"[[WORD_ID]]",
+    dur:"[[EXPECTED_DUR]]",
+    src:"[[META_MP3_NAME]]"
+};
+
+/* --- Minify Start --- */
 function getParam(name, decode) {
     let ret = urlQuery.get(name);
     if (ret !== null && decode) { ret = atob(ret); }
     return ret
 }
 
-let words = /* |SWords| */{WORDS_VAR}/* |EWords| */,
-    wordID = "{{WORD_ID}}",
-    expectedDur = {EXPECTED_DUR},
-    byTime = [],
+let byTime = [],
     paras = [],
     parasReady = false,
     lastHighlighted = null,
@@ -322,12 +333,16 @@ let words = /* |SWords| */{WORDS_VAR}/* |EWords| */,
     player = null,
     requestWakeLock = null,
     urlQuery = new URLSearchParams(window.location.search),
-    urlHash = window.location.hash;
+    urlHash = window.location.hash,
+    tickURL = getParam("tick_url", true),
+    selfID = getParam("id"),
+    tickStatus = null;
 
 function move(e) {
     if (!jumpOnClick) {
         return;
     }
+    extraMove();
     if (e.srcElement !== undefined) {
         e = e.srcElement.at;
     }
@@ -735,8 +750,8 @@ function playerLoaded() {
             const ms = navigator.mediaSession;
             if (ms) {
                 let title = "Podcast", album = "Scott's Podcasts";
-                if (typeof titleMeta !== 'undefined' && titleMeta !== null && titleMeta.length > 0) {
-                    let temp = JSON.parse(atob(titleMeta));
+                if (typeof meta['title'] !== 'undefined' && meta['title'] !== null && meta['title'].length > 0) {
+                    let temp = JSON.parse(atob(meta['title']));
                     if (temp['link_title'].length > 0) {
                         title = temp['link_title'];
                     }
@@ -771,7 +786,7 @@ function playerLoaded() {
             }
         }
 
-        let dur = expectedDur !== null ? expectedDur : player.duration;
+        let dur = meta['dur'] !== null ? meta['dur'] : player.duration;
         document.getElementById("pos").max = dur * 10;
 
         paras.forEach(e => {
@@ -824,6 +839,52 @@ function windowBlur() {
     }
 }
 
+function loadTick() {
+    if (tickURL != null && selfID != null) {
+        fetch(tickURL)
+            .then(r => r.json())
+            .then(d => {
+                tickStatus = d;
+                let now = new Date().valueOf();
+                if (tickStatus["rate_sec"] < 1) {
+                    tickStatus["rate_sec"] = 1;
+                }
+                tickStatus["reload"] = now + tickStatus["expires_sec"] * 1000;
+                tickStatus["update"] = now + tickStatus["rate_sec"] * 1000;
+                tickStatus["last"] = 0;
+            })
+            .catch(e => {
+                tickURL = null;
+                selfID = null;
+            });
+    }
+}
+
+function publishTick(val, duration) {
+    if (tickStatus != null) {
+        let now = new Date().valueOf();
+        if (now >= tickStatus["reload"]) {
+            tickStatus = null;
+            loadTick();
+        } else if (now >= tickStatus["update"] && Math.abs(val - tickStatus["last"]) >= (tickStatus["rate_sec"] / 2)) {
+            tickStatus["last"] = val;
+            tickStatus["update"] = now + tickStatus["rate_sec"] * 1000;
+            fetch(tickStatus["url"], {
+                method: 'PUT',
+                headers: {
+                    'Content-type': ''
+                },
+                body: JSON.stringify({
+                    'id': selfID, 
+                    at: parseFloat(val.toFixed(2)), 
+                    dur: parseFloat(duration.toFixed(2)),
+                    update: new Date(now).toISOString(),
+                }),
+            }).catch(e => { });
+        }
+    }
+}
+
 async function decodeData(value) {
     const b64toBlob = (base64, type = 'application/octet-stream') => 
         fetch(`data:${type};base64,${base64}`).then(res => res.blob());
@@ -840,14 +901,15 @@ async function decodeData(value) {
 document.addEventListener("DOMContentLoaded", function(event) {
     window.history.replaceState({}, null, window.location.href.split("?")[0].split("#")[0]);
 
-    if (expectedDur !== null) {
-        document.getElementById("pos").max = expectedDur * 10;
+    if (meta['dur'] !== null) {
+        document.getElementById("pos").max = meta['dur'] * 10;
         posChanging(false);
     }
 
     player = document.getElementById('player');
     player.newTarget = null;
 
+    loadTick();
 
     let targetPos = null;
     
@@ -869,9 +931,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }
     if (targetPos === null) {
         try {
-            let tempID = window.localStorage.getItem('wordID'), 
+            let tempID = window.localStorage.getItem(meta['id']), 
                 tempPos = window.localStorage.getItem('pos');
-            if (tempID == wordID) {
+            if (tempID == meta['id']) {
                 tempPos = parseFloat(tempPos);
                 tempPos -= 5;
                 if (tempPos > 0) {
@@ -892,6 +954,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     });
     player.addEventListener("timeupdate", function () {
         let at = player.currentTime;
+        publishTick(at, player.duration);
         if (player.paused == playerIsPlaying) {
             player.dispatchEvent(new CustomEvent(player.paused ? 'pause' : 'play'));
         }
@@ -938,7 +1001,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
         if (lastElem !== null && (lastHighlighted === null || (lastHighlighted !== null && !isIn))) {
             if (at >= 60) {
-                window.localStorage.setItem('wordID', wordID);
+                window.localStorage.setItem('wordID', meta['id']);
                 window.localStorage.setItem('pos', at);
             }
             let stack = [lastElem];
@@ -991,7 +1054,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
     });
 
-    decodeData(words).then((words) => {
+    decodeData(meta['words']).then((words) => {
         let children = [], lastPara = null, lastAt = 0, lastHeader = 0, lastSpeakerID=' ';
         for (let i = 0; i < words['word'].length; i++) {
             let at = words['off'][i], word = words['word'][i], para = words['para'].charAt(i), speakerID = words['speaker'].charAt(i);
@@ -1081,8 +1144,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
         window.addEventListener('blur', windowBlur);
         setupWakeLock();
         playerLoaded();
+        extraSetup();
     });
 });
+extraScript();
+/* --- Minify End --- */
 </script>
 </head>
 <body>
@@ -1117,6 +1183,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             </g>
         </svg>
     </span>
+    <!-- EXTRA_WIDGETS -->
 </div>
 
 <div class="content" id="transcript"></div>
@@ -1156,7 +1223,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     </div>
 </div>
 
-<audio id="player" preload="metadata"><source x_src_data="start" src="{{MP3_NAME}}" x_src_data="end"></audio>
+<audio id="player" preload="metadata"><source src="[[MP3_NAME]]"></audio>
 
 </body>
 </html>

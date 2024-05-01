@@ -6,6 +6,7 @@ import base64
 import gzip
 import html
 import json
+import re
 
 class IsParagraph:
     def __init__(self):
@@ -178,11 +179,18 @@ def fill_out(words, mp3_fn):
 
     fn = mp3_fn.replace("\\", "/").split("/")[-1]
 
-    data = data.replace("{{TITLE}}", html.escape(fn.replace(".mp3", "")))
-    data = data.replace("{{MP3_NAME}}", html.escape(fn))
-    data = data.replace("{{WORD_ID}}", sha256(fn.encode("utf-8")).hexdigest()[:10])
-    data = data.replace("{WORDS_VAR}", encode_words(simple))
-    data = data.replace("{EXPECTED_DUR}", json.dumps(duration))
+    to_replace = {
+        "[[TITLE]]": html.escape(fn.replace(".mp3", "").replace("_", " ")),
+        '"[[WORDS_VAR]]"': encode_words(simple),
+        "[[TITLE_META]]": html.escape(fn.replace(".mp3", "").replace("_", " ")),
+        "[[WORD_ID]]": sha256(fn.encode("utf-8")).hexdigest()[:10],
+        '"[[EXPECTED_DUR]]"': json.dumps(duration),
+        "[[META_MP3_NAME]]": html.escape(fn),
+        "[[MP3_NAME]]": html.escape(fn),
+    }
+
+    all_tags = "(?P<tag>" + "|".join(re.escape(k) for k in to_replace) + ")"
+    data = re.sub(all_tags, lambda m: to_replace[m.group('tag')], data)
 
     data = "".join(x.strip() for x in data.split("\n"))
 
