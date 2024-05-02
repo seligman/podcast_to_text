@@ -318,25 +318,25 @@ function getParam(name, decode) {
     return ret
 }
 
-let byTime = [],
-    paras = [],
-    parasReady = false,
-    lastHighlighted = null,
-    isUserMoving = false,
-    scrollState = [-1, -1, -1],
-    playerLeftToLoad = 3,
-    playerIsPlaying = false,
-    jumpOnClick = true,
-    autoScroll = true,
-    wakeLock = null,
-    isInterrupted = false,
-    player = null,
-    requestWakeLock = null,
-    urlQuery = new URLSearchParams(window.location.search),
-    urlHash = window.location.hash,
-    tickURL = getParam("tick_url", true),
-    selfID = getParam("id"),
-    tickStatus = null;
+let byTime = [];
+let paras = [];
+let parasReady = false;
+let lastHighlighted = null;
+let isUserMoving = false;
+let scrollState = [-1, -1, -1];
+let playerLeftToLoad = 3;
+let playerIsPlaying = false;
+let jumpOnClick = true;
+let autoScroll = true;
+let wakeLock = null;
+let isInterrupted = false;
+let player = null;
+let requestWakeLock = null;
+let urlQuery = new URLSearchParams(window.location.search);
+let urlHash = window.location.hash;
+let tickURL = getParam("tick_url", true);
+let selfID = getParam("id");
+let tickStatus = null;
 
 function move(e) {
     if (!jumpOnClick) {
@@ -768,19 +768,17 @@ function playerLoaded() {
                     ],
                 });
                 ms.setActionHandler("play", () => {
-                    if (player.paused) {
-                        play();
-                    }
+                    window.setTimeout(() => {
+                        document.getElementById('player').play();
+                    });
                 });
                 ms.setActionHandler("pause", () => {
-                    if (!player.paused) {
-                        play();
-                    }
+                    document.getElementById('player').pause();
                 });
-                ms.setActionHandler("seekbackward", () => {
+                ms.setActionHandler("seekbackward", (seekOffset) => {
                     player.currentTime -= 30;
                 });
-                ms.setActionHandler("seekforward", () => {
+                ms.setActionHandler("seekforward", (seekOffset) => {
                     player.currentTime += 30;
                 });
             }
