@@ -4,7 +4,7 @@ This is a utility to turn a MP3 file into a HTML page with a machine generated t
 
 ![Preview](examples/preview.png)
 
-While this is still a WIP, please check out [`usage.md`](usage.md) for more details on how to run this end to.
+While this is still a WIP, please check out [`usage.md`](usage.md) for more details on how to run this end to end.
 
 Supported engines:
 
