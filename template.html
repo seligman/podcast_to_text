@@ -865,16 +865,17 @@ function loadTick() {
     }
 }
 
-function publishTick(val, duration) {
+function publishTick(val, duration, finalCall=false) {
     if (tickStatus != null) {
         let now = new Date().valueOf();
         if (now >= tickStatus["reload"]) {
             tickStatus = null;
             loadTick();
-        } else if (now >= tickStatus["update"] && Math.abs(val - tickStatus["last"]) >= (tickStatus["rate_sec"] / 2)) {
+        } else if (finalCall || (now >= tickStatus["update"] && Math.abs(val - tickStatus["last"]) >= (tickStatus["rate_sec"] / 2))) {
             tickStatus["last"] = val;
             tickStatus["update"] = now + tickStatus["rate_sec"] * 1000;
             fetch(tickStatus["url"], {
+                keepalive: finalCall,
                 method: 'PUT',
                 headers: {
                     'Content-type': ''
@@ -889,6 +890,10 @@ function publishTick(val, duration) {
         }
     }
 }
+
+window.addEventListener("beforeunload", function(e){
+    publishTick(player.currentTime, player.duration, true);
+});
 
 async function decodeData(value) {
     const b64toBlob = (base64, type = 'application/octet-stream') => 
