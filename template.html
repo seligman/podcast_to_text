@@ -414,7 +414,7 @@ document.addEventListener('keydown', e => {
             }
             else if (new Set(['ArrowLeft', 'ArrowRight']).has(e.code)) {
                 e.preventDefault();
-                movePara(e.code === 'ArrowLeft');
+                moveWord(e.code === 'ArrowLeft');
                 return true;
             }
         } else {
