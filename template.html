@@ -13,7 +13,7 @@
     --content-size:100%;
     --word-pointer:pointer;
     --widget-height:62px;
-    color-scheme: dark;
+    color-scheme:dark;
 }
 
 html,
@@ -201,6 +201,7 @@ p.current{
         box-shadow:4px 0 0 #444,-4px 0 0 #444;
     }
 }
+
 @media only screen and (min-width:700px){
     .content{
         width:600px;
@@ -210,6 +211,7 @@ p.current{
         margin-left:0;
     }
 }
+
 .timecode{
     color:#aaa;
 }
@@ -300,7 +302,6 @@ input[type="text"],input[type="number"],textarea{
 }
 </style>
 <script>
-
 const extraMove=()=>{};
 const extraScript=()=>{};
 const extraSetup=()=>{};
@@ -311,7 +312,6 @@ const meta={
     dur:"[[EXPECTED_DUR]]",
     src:"[[META_MP3_NAME]]"
 };
-
 /* --- Minify Start --- */
 function getParam(name, decode) {
     let ret = urlQuery.get(name);
@@ -1169,7 +1169,6 @@ extraScript();
 </script>
 </head>
 <body>
-
 <div class="rows header">
     <svg id="playButton" class="playPause play" width="50" height="50" id="btnPlay" viewBox="-2 -2 108 108" onclick="play()">
         <circle class="forPlay" cx="51" cy="51" r="50" style="stroke-width:1px;stroke:#000;" />
