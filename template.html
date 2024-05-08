@@ -13,6 +13,7 @@
     --content-size:100%;
     --word-pointer:pointer;
     --widget-height:62px;
+    --extra_height:1.0;
     color-scheme:dark;
 }
 
@@ -41,7 +42,7 @@ body{
 .content{
     font-size:var(--content-size);
     padding:10px;
-    padding-top:60px;
+    padding-top:calc(60px * var(--extra_height));
     padding-bottom:30px;
 }
 
@@ -87,7 +88,7 @@ body{
 
 .dropdown{
     position:fixed;
-    top:calc(var(--widget-height) - 10px);
+    top:calc((var(--widget-height) * var(--extra_height)) - 10px);
     width:10em;
     left:calc(100% - 10em);
     align-items:center;
@@ -118,7 +119,7 @@ body{
     padding-top:10px;
     left:0;
     width:100%;
-    height:var(--widget-height);
+    height:calc(var(--widget-height) * var(--extra_height));
     box-shadow:0 1px 2px hsla(0,0%,0%,0.1),0 1px 4px hsla(0,0%,0%,0.1),0 2px 8px hsla(0,0%,0%,0.1);
 }
 
@@ -183,12 +184,6 @@ p.current{
     }
     span.current{
         scroll-margin:calc(1.5em + (var(--widget-height) * var(--extra_height))) 0 2.5em 0;
-    }
-    .header{
-        height:calc(var(--widget-height) * var(--extra_height));
-    }
-    .content{
-        padding-top:calc(60px * var(--extra_height));
     }
     .playPause{
         transform:scale(1.9);
