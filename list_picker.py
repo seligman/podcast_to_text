@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__version__ = 47        # Version of this package
+__version__ = 48        # Version of this package
 DEBUG_PRINT = False     # Set this to True to log all print() output
 DEBUG_INPUT = False     # Set this to True to log all input received
 DELAY_INPUT = False     # Set this to True to take 1 second to process each key
@@ -68,7 +68,7 @@ if DEBUG_PRINT:
     def print(*args, **kargs):
         import json, datetime, sys
         if sys.version_info >= (3, 11): from datetime import UTC
-        else: UTC=datetime_fix.timezone.utc
+        else: import datetime as datetime_fix; UTC=datetime_fix.timezone.utc
         # Reverse ansi codes to the syntax used by print_ansi
         temp = re.sub("[<>]", lambda m: {"<":"<open>",">":"<close>"}[m.group(0)], args[0])
         for ansi, desc in [
@@ -148,7 +148,7 @@ def _debug_getch(value, call_no):
     if DEBUG_INPUT:
         import json, datetime, sys
         if sys.version_info >= (3, 11): from datetime import UTC
-        else: UTC=datetime_fix.timezone.utc
+        else: import datetime as datetime_fix; UTC=datetime_fix.timezone.utc
         if value is None:
             msg = "<none>"
         elif isinstance(value, str):
