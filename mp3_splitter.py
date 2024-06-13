@@ -5,33 +5,50 @@ import sys, os
 class ReadMP3:
     def __init__(self, f):
         self.f = f
-        self.tell = 0
+        self.tell = 0 # The offset in the file
+        # The idea with beats is to have an integer value for the offset to prevent
+        # float drift issues.  It's converted to a float in terms of seconds for the 
+        # offset property.  The beat_rate is the number of beats per second, which 
+        # is the LCM of all the possible sample rates
         self.beat_rate = 14112000
+        self.total_beats = 0
 
+    @property
+    def offset(self):
+        return self.total_beats / self.beat_rate
+
+    # Read a number of bytes from the file and track the offset
     def read(self, bytes):
         ret = self.f.read(bytes)
         self.tell += len(ret)
         return ret
     
+    # Seek to a new position, updating the internal offset
     def seek(self, offset, whence):
         self.tell = self.f.seek(offset, whence)
         return self.tell
 
     def next(self):
         while True:
+            # Store the position where this frame was
             self.loc = self.tell
             self.header = self.read(4)
             if len(self.header) < 4:
+                # All done
                 return False
 
             if self.header[:3] == b'TAG':
+                # Skip over ID3v1 Tags
                 self.read(124)
             elif self.header[:3] == b'ID3':
+                # Get the size and skip over ID3v2 headers
                 self.read(2)
                 skip = self.read(4)
                 skip = (skip[0] << 21) + (skip[1] << 14) + (skip[2] << 7) + skip[3]
                 self.read(skip)
             elif self.header[0] == 0xff and (self.header[1] >> 4) == 0xf:
+                # We found the sync bytes, cautiously read the rest of the data
+                # Anything that's invalid causes a short circuit to ignore the frame
                 valid = True
                 if valid:
                     self.mpeg_ver = {0: 2.5, 2: 2, 3: 1}.get((self.header[1] >> 3) & 0x3)
@@ -74,19 +91,27 @@ class ReadMP3:
                         else:
                             valid = False
                 if valid:
+                    # All the data appears valid, decode and update our data
                     self.padding = (self.header[2] >> 1) & 0x1
                     self.channel_mode = (self.header[3] >> 6) & 0x3
                     self.padding_size = {1: 4, 2: 1, 3: 1}[self.layer]
                     self.samples_per_frame = {(1, 1): 384, (1, 2): 1152, (1, 3): 1152, (2, 1): 192, (2, 2): 1152, (2, 3): 576}[(self.mpeg_ver, self.layer)]
                     self.size = self.samples_per_frame // 8 * (self.bitrate * 1000) // self.sample_rate + (self.padding * self.padding_size)
+                    # This read will pull in the data, except for the self.header, and skip to the next frame
                     self.data = self.read(self.size - 4)
                     self.beats = self.samples_per_frame * (self.beat_rate / self.sample_rate)
+                    self.total_beats += self.beats
                     return True
 
+            # If we get here, then we'll continue reading two bytes 
+            # till we get a sync byte, or hit the end of the file
+
+# Helper to split an array into n mostly equally length arrays
 def split_array(a, n):
     k, m = divmod(len(a), n)
     return [a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n)]
 
+# Take one MP3 and chunk it into multiple MP3s if it's too big by size or length
 def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None, fn_extra=""):
     ret = []
 

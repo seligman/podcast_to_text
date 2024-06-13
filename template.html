@@ -30,6 +30,36 @@ body{
     box-sizing:border-box;
 }
 
+::selection {
+    background-color: #44c;
+    color: #fff;
+}
+
+.picker {
+    position: fixed;
+    display: none;
+    background-color: #55f;
+    border-color: #55f;
+    color: #fff;
+    border-width: 4px;
+    border-style: solid;
+    padding: 2px;
+    cursor:pointer;
+}
+
+.picker:after {
+    position: absolute;
+    content: "";
+    border-top: 15px solid #55f;
+    border-left: 15px solid transparent;
+    border-bottom: 15px solid transparent;
+    border-right: 15px solid transparent;
+    top: 100%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    display: block;
+}
+
 .overlay{
     position:fixed;
     background-color:rgba(0,0,0,.25);
@@ -314,6 +344,7 @@ function getParam(name, decode) {
     return ret
 }
 
+let timing = null;
 let byTime = [];
 let paras = [];
 let parasReady = false;
@@ -391,6 +422,81 @@ function moveWord(prevWord) {
         }
     } else {
         player.currentTime = prevWord ? lastHighlighted[0].at - (1.0 * player.playbackRate) : lastHighlighted[lastHighlighted.length-1].atEnd + 0.1;
+    }
+}
+
+function downloadURL(data, fileName) {
+    const a = document.createElement('a');
+    a.href = data;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.style.display = 'none';
+    a.click();
+    a.remove();
+}
+
+function downloadBlob(data, fileName, mimeType) {
+    const blob = new Blob([data], {
+        type: mimeType
+    });
+    const url = window.URL.createObjectURL(blob);
+    downloadURL(url, fileName);
+    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+}
+
+async function getData(uri, start, len) {
+    const resp = await fetch(
+        uri, 
+        {
+            'headers': {
+                'Range': 'bytes=' + start + "-" + (start + len - 1),
+            },
+        },
+    );
+    const asBlob = await resp.blob();
+    return asBlob;
+}
+
+function nearestNode(val, x, pass) {
+    if (val.hasOwnProperty(x)) {
+        return val;
+    } else if (val.parentNode.hasOwnProperty(x)) {
+        return val.parentNode;
+    }
+
+    if (pass == "prev") {
+        return nearestNode(val.previousElementSibling, x, "--");
+    } else if (pass == "next") {
+        return nearestNode(val.nextElementSibling, x, "--");
+    }
+
+    return null;
+}
+
+let lastSelFrom = null, lastSelTo = null;
+function downloadSel() {
+    if (lastSelFrom != null && lastSelTo != null) {
+        let nodeFrom = nearestNode(lastSelFrom, 'wordID', "next");
+        let nodeTo = nearestNode(lastSelTo, 'wordID', "prev");
+        if (nodeFrom !== null && nodeTo !== null) {
+            if (nodeFrom.at > nodeTo.at) {
+                let temp = nodeFrom;
+                nodeFrom = nodeTo;
+                nodeTo = temp;
+            }
+            let posStart = timing[nodeFrom.wordID * 2];
+            let posEnd = timing[nodeTo.wordID * 2 + 1];
+            if (posStart > 0 && posEnd > 0) {
+                let url = document.getElementById('player').childNodes[0].src;
+                let fn = url.replace(/^.*\//, "");
+                fn = fn.replace(/\.[^/.]+$/, "");
+                fn = decodeURI(fn.replaceAll("+", " "));
+                fn += "_" + getTick(nodeFrom.at).replaceAll(":", "-") + "_" + getTick(nodeTo.at).replaceAll(":", "-") + ".mp3";
+                getData(url, posStart, posEnd - posStart).then(data => {
+                    downloadBlob(data, fn, "audio/mp3");
+                });
+            }
+        }
     }
 }
 
@@ -1067,8 +1173,79 @@ document.addEventListener("DOMContentLoaded", function(event) {
     });
 
     decodeData(meta['words']).then((words) => {
-        let children = [], lastPara = null, lastAt = 0, lastHeader = 0, lastSpeakerID=' ';
+        if (words.hasOwnProperty('timing')) {
+            timing = [];
+
+            document.addEventListener('mouseup', e => {
+                let sel = document.getSelection();
+                let picker = document.getElementById("picker");
+                let show = false;
+                if (sel.rangeCount > 0 && sel.toString().length > 0) {
+                    if (sel.type == "Range") {
+                        lastSelFrom = sel.anchorNode;
+                        lastSelTo = sel.focusNode;
+                        let nodeFrom = nearestNode(lastSelFrom, 'wordID', "next");
+                        let nodeTo = nearestNode(lastSelTo, 'wordID', "prev");
+                        if (nodeFrom != null && nodeTo != null) {
+                            show = true;
+                        }
+                    }
+                }
+                if (show) {
+                    let range = sel.getRangeAt(0).cloneRange();
+                    let rect = range.getBoundingClientRect();
+                    rect.left += window.scrollX;
+                    rect.right += window.scrollX;
+                    rect.top += window.scrollY;
+                    rect.bottom += window.scrollY;
+
+                    picker.style.display = 'block';
+                    picker.style.top = (rect.top - picker.offsetHeight - 10) + "px";	
+                    picker.style.left = ((rect.left + rect.right) / 2 - picker.offsetWidth / 2) + "px";  
+                } else {
+                    picker.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('mousedown', e => {
+                let sel = document.getSelection();
+                let picker = document.getElementById("picker");
+                if (sel.rangeCount == 0 || sel.toString().length == 0) {
+                    setTimeout(() => {
+                        picker.style.display = 'none';
+                    }, 100);
+                }
+            });
+
+            document.addEventListener("selectionchange", e => {
+                let sel = document.getSelection();
+                let picker = document.getElementById("picker");
+
+                if (sel.rangeCount == 0 || sel.toString() == 0) {
+                    setTimeout(() => {
+                        picker.style.display = 'none';
+                    }, 100);
+                }
+            });
+        }
+        let children = [], lastPara = null, lastAt = 0, lastHeader = 0, lastSpeakerID=' ', lastEndAt = 0, lastTiming = 0;
         for (let i = 0; i < words['word'].length; i++) {
+            if (timing !== null) {
+                let temp = words['timing'][i * 2];
+                if (temp == -1) {
+                    timing.push(0);
+                } else {
+                    lastTiming += temp;
+                    timing.push(lastTiming);
+                }
+                temp = words['timing'][i * 2 + 1];
+                if (temp == -1) {
+                    timing.push(0);
+                } else {
+                    lastTiming += temp;
+                    timing.push(lastTiming);
+                }
+            }
             let at = words['off'][i], word = words['word'][i], para = words['para'].charAt(i), speakerID = words['speaker'].charAt(i);
             at += lastAt;
             lastAt = at;
@@ -1093,6 +1270,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 byTime[byTime.length - 1].next = temp;
             }
             temp.at = at;
+            temp.wordID = i;
             temp.onclick = move;
             temp.className = "word";
             if (para == '.' && speakerID != lastSpeakerID) {
@@ -1234,6 +1412,7 @@ extraScript();
     </div>
 </div>
 
+<span id="picker" class="picker" onmousedown="downloadSel()">Download segment</span>
 <audio id="player" preload="metadata"><source src="[[MP3_NAME]]"></audio>
 
 </body>

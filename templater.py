@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from decimal import Decimal
 from hashlib import sha256
 from mp3_splitter import ReadMP3
 import base64
@@ -20,10 +21,11 @@ class IsParagraph:
     def prep_speakers(self, words):
         self.speakers = {}
         temp = {}
-        for word, start, end, speaker in enumerate_words(words):
-            if speaker not in temp:
-                temp[speaker] = 0
-            temp[speaker] += end - start
+        for word in enumerate_words(words):
+            if 'start' in word:
+                if word.get('speaker', -1) not in temp:
+                    temp[word.get('speaker', -1)] = 0
+                temp[word.get('speaker', -1)] += max(word['end'], word['start']) - min(word['end'], word['start'])
         temp = [(dur, speaker_id) for speaker_id, dur in temp.items()]
         temp.sort(reverse=True)
 
@@ -43,10 +45,7 @@ class IsParagraph:
         if isinstance(args[0], dict):
             word, start, end = args[0]['word'], args[0]['start'], args[0]['end']
         elif isinstance(args[0], (list, tuple)):
-            if len(args[0]) == 3:
-                word, start, end = args[0]
-            else:
-                word, start, end, _ = args[0]
+            word, start, end = args[0]
         else:
             word, start, end = args
 
@@ -61,36 +60,46 @@ class IsParagraph:
             if len(self.gaps) > 10:
                 self.gaps.pop(0)
             best = min((sum(abs(x - y) for x in self.gaps), y) for y in self.gaps)[1]
-            best = max(best, 0.05)
+            best = max(best, Decimal('0.05'))
             if dur > best and ((dur - best) / best) > 2:
                 self.was_paragraph = True
 
         self.last_end = max(start, end)
-        self.last_sentence = (len(word) > 0 and word[-1] in ".?!")
+        self.last_sentence = (len(word) > 0 and word[-1] in "\\),:;.?!'\"")
 
 def enumerate_words(data):
     for frame in data:
-        if len(frame) == 3:
-            word, start, end = frame
-            speaker = -1
+        if isinstance(frame, dict):
+            yield frame # In case enumerate_words was already called
         else:
-            word, start, end, speaker = frame
-        yield word, start, end, speaker
+            if len(frame) == 3:
+                word, start, end = frame
+                speaker = -1
+            else:
+                word, start, end, speaker = frame
+            yield {
+                "word": word,
+                "start": Decimal(str(start)),
+                "end": Decimal(str(end)),
+                "speaker": speaker,
+            }
 
 def split_phrases(words):
-    ret = []
-    for word, start, end, speaker in enumerate_words(words):
-        if start > end:
-            start, end = end, start
-        if " " in word:
-            dur = end - start
-            temp = word.split(" ")
-            dur /= len(temp)
-            for i, word in enumerate(temp):
-                ret.append((word, i * dur + start, (i + 1) * dur + start, speaker))
+    for word in enumerate_words(words):
+        if word['start'] > word['end']:
+            word['start'], word['end'] = word['end'], word['start']
+        if " " in word['word']:
+            temp = word['word'].split(" ")
+            dur = (word['end'] - word['start']) / Decimal(len(temp))
+            for i, sub_word in enumerate(temp):
+                yield {
+                    'word': sub_word,
+                    'start': Decimal(i) * dur + word['start'],
+                    'end': Decimal(i + 1) * dur + word['start'],
+                    'speaker': word['speaker']
+                }
         else:
-            ret.append((word, start, end, speaker))
-    return ret
+            yield word
 
 def fill_out(words, mp3_fn):
     with open("template.html", "rt") as f:
@@ -106,58 +115,57 @@ def fill_out(words, mp3_fn):
     # For engines that output phrases instead of words, invent where the boundaries are
     if " " in "".join(x[0] for x in words):
         # There's a space in at least on word, so pass it off to our helper to split up
-        words = split_phrases(words)
+        words = list(split_phrases(words))
 
     is_para = IsParagraph()
     is_para.prep_speakers(words)
 
     last_speaker = ""
     paragraphs = []
-    start_time = 0
+    start_time = Decimal(0)
     paragraph = []
-    for i, (word, start, end, speaker) in enumerate(enumerate_words(words)):
-        is_para.check((word, start, end))
+    for i, word in enumerate(enumerate_words(words)):
+        is_para.check(word)
 
         para_break = False
 
-        if (start - start_time) > 45 and is_para.was_sentence:
+        if (word['start'] - start_time) > Decimal(45) and is_para.was_sentence:
             para_break = True
 
-        if (start - start_time) > 60:
+        if (word['start'] - start_time) > Decimal(60):
             para_break = True
         
-        if i == 0 or (speaker != last_speaker and is_para.was_sentence):
+        if i == 0 or (word['speaker'] != last_speaker and is_para.was_sentence):
             if i > 0:
                 para_break = True
-            last_speaker = speaker
+            last_speaker = word['speaker']
 
         if i == len(words) - 1:
             paragraph.append({
-                'word': word, 
-                'start': start, 
-                'end': end, 
-                'speaker_encoded': is_para.encode_speaker(speaker),
+                'word': word['word'], 
+                'start': word['start'], 
+                'end': word['end'], 
+                'speaker_encoded': is_para.encode_speaker(word['speaker']),
             })
             para_break = True
 
         if para_break:
             paragraphs.append(paragraph)
             paragraph = []
-            start_time = start
+            start_time = word['start']
 
         if len(word) > 0:
             paragraph.append({
-                'word': word, 
-                'start': start, 
-                'end': end, 
-                'speaker_encoded': is_para.encode_speaker(speaker),
+                'word': word['word'], 
+                'start': word['start'], 
+                'end': word['end'], 
+                'speaker_encoded': is_para.encode_speaker(word['speaker']),
             })
 
     # Create a dump out of final data to send to the webpage, the webpage itself
     # will merge these to try to prevent too much animated noise
     simple = {'off': [], 'word': [], 'speaker': [], 'para': []}
     last_pos, last_value = 0, 0
-    transcript = ""
     def track_pos(value):
         nonlocal last_pos, last_value
         last_value = value
@@ -179,10 +187,17 @@ def fill_out(words, mp3_fn):
 
     fn = mp3_fn.replace("\\", "/").split("/")[-1]
 
+    details = {
+        'link_title': fn.replace(".mp3", "").replace("_", " "),
+        'feed_title': '',
+        # 'duration': '<not used>',
+        # 'published': '<not used>',
+    }
+
     to_replace = {
         "[[TITLE]]": html.escape(fn.replace(".mp3", "").replace("_", " ")),
         '"[[WORDS_VAR]]"': encode_words(simple),
-        "[[TITLE_META]]": html.escape(fn.replace(".mp3", "").replace("_", " ")),
+        "[[TITLE_META]]": base64.b64encode(json.dumps(details, separators=(",", ":")).encode("utf-8")).decode("utf-8"),
         "[[WORD_ID]]": sha256(fn.encode("utf-8")).hexdigest()[:10],
         '"[[EXPECTED_DUR]]"': json.dumps(duration),
         "[[META_MP3_NAME]]": html.escape(fn),
