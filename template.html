@@ -40,11 +40,16 @@ body{
     display: none;
     background-color: #55f;
     border-color: #55f;
-    color: #fff;
+    color: #000;
     border-width: 4px;
     border-style: solid;
     padding: 2px;
+    filter: drop-shadow(5px 5px 10px #000);
+}
+
+.picker span {
     cursor:pointer;
+    color: #fff;
 }
 
 .picker:after {
@@ -474,6 +479,29 @@ function nearestNode(val, x, pass) {
 }
 
 let lastSelFrom = null, lastSelTo = null;
+function copySel() {
+    if (lastSelFrom != null && lastSelTo != null) {
+        let nodeFrom = nearestNode(lastSelFrom, 'wordID', "next");
+        let nodeTo = nearestNode(lastSelTo, 'wordID', "prev");
+        if (nodeFrom !== null && nodeTo !== null) {
+            if (nodeFrom.at > nodeTo.at) {
+                let temp = nodeFrom;
+                nodeFrom = nodeTo;
+                nodeTo = temp;
+            }
+            let vals = [];
+            byTime.forEach(e => {
+                if (e.at >= nodeFrom.at && e.at <= nodeTo.at) {
+                    if (vals.length == 0) {
+                        vals.push(getTick(e.at) + ':');
+                    }
+                    vals.push(e.innerText.trim());
+                }
+            });
+            navigator.clipboard.writeText(vals.join(' '));
+        }
+    }
+}
 function downloadSel() {
     if (lastSelFrom != null && lastSelTo != null) {
         let nodeFrom = nearestNode(lastSelFrom, 'wordID', "next");
@@ -1412,7 +1440,7 @@ extraScript();
     </div>
 </div>
 
-<span id="picker" class="picker" onmousedown="downloadSel()">Download segment</span>
+<span id="picker" class="picker"><span onmousedown="downloadSel()">Download segment</span> | <span onmousedown="copySel()">Copy text</span></span>
 <audio id="player" preload="metadata"><source src="[[MP3_NAME]]"></audio>
 
 </body>
