@@ -40,7 +40,7 @@ body{
     display: none;
     background-color: #55f;
     border-color: #55f;
-    color: #000;
+    color: #eee;
     border-width: 4px;
     border-style: solid;
     padding: 2px;
@@ -369,6 +369,7 @@ let urlHash = window.location.hash;
 let tickURL = getParam("tick_url", true);
 let selfID = getParam("id");
 let tickStatus = null;
+let ignoreSelChange = false;
 
 function move(e) {
     if (!jumpOnClick) {
@@ -479,6 +480,11 @@ function nearestNode(val, x, pass) {
 }
 
 let lastSelFrom = null, lastSelTo = null;
+function closeSel() {
+    window.getSelection().removeAllRanges();
+    ignoreSelChange = false;
+    picker.style.display = 'none';
+}
 function copySel() {
     if (lastSelFrom != null && lastSelTo != null) {
         let nodeFrom = nearestNode(lastSelFrom, 'wordID', "next");
@@ -499,10 +505,16 @@ function copySel() {
                 }
             });
             navigator.clipboard.writeText(vals.join(' '));
+            closeSel();
         }
     }
 }
-function downloadSel() {
+function downloadSel(preview, e) {
+    e.preventDefault();
+    if (document.getElementById("preview").source != null) {
+        document.getElementById("preview").source.stop();
+        return;
+    }
     if (lastSelFrom != null && lastSelTo != null) {
         let nodeFrom = nearestNode(lastSelFrom, 'wordID', "next");
         let nodeTo = nearestNode(lastSelTo, 'wordID', "prev");
@@ -512,8 +524,8 @@ function downloadSel() {
                 nodeFrom = nodeTo;
                 nodeTo = temp;
             }
-            let posStart = timing[nodeFrom.wordID * 2];
-            let posEnd = timing[nodeTo.wordID * 2 + 1];
+            let posStart = timing[(nodeFrom.wordID - parseInt(document.getElementById("padBefore").value)) * 2];
+            let posEnd = timing[(nodeTo.wordID + parseInt(document.getElementById("padAfter").value)) * 2 + 1];
             if (posStart > 0 && posEnd > 0) {
                 let url = document.getElementById('player').childNodes[0].src;
                 let fn = url.replace(/^.*\//, "");
@@ -521,7 +533,26 @@ function downloadSel() {
                 fn = decodeURI(fn.replaceAll("+", " "));
                 fn += "_" + getTick(nodeFrom.at).replaceAll(":", "-") + "_" + getTick(nodeTo.at).replaceAll(":", "-") + ".mp3";
                 getData(url, posStart, posEnd - posStart).then(data => {
-                    downloadBlob(data, fn, "audio/mp3");
+                    if (preview) {
+                        data.arrayBuffer().then(arrayBuffer => {
+                            let context = new AudioContext();
+                            context.decodeAudioData(arrayBuffer, (buffer) => {
+                                var source = context.createBufferSource();
+                                document.getElementById("preview").source = source;
+                                source.onended = () => {
+                                    document.getElementById("preview").innerText = "Preview";
+                                    document.getElementById("preview").source = null;
+                                };
+                                document.getElementById("preview").innerText = "Stop";
+                                source.buffer = buffer;
+                                source.connect(context.destination);
+                                source.start(0);
+                            });
+                        });
+                    } else {
+                        downloadBlob(data, fn, "audio/mp3");
+                        closeSel();
+                    }
                 });
             }
         }
@@ -1210,16 +1241,19 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 let show = false;
                 if (sel.rangeCount > 0 && sel.toString().length > 0) {
                     if (sel.type == "Range") {
-                        lastSelFrom = sel.anchorNode;
-                        lastSelTo = sel.focusNode;
-                        let nodeFrom = nearestNode(lastSelFrom, 'wordID', "next");
-                        let nodeTo = nearestNode(lastSelTo, 'wordID', "prev");
+                        let tempLastSelFrom = sel.anchorNode;
+                        let tempLastSelTo = sel.focusNode;
+                        let nodeFrom = nearestNode(tempLastSelFrom, 'wordID', "next");
+                        let nodeTo = nearestNode(tempLastSelTo, 'wordID', "prev");
                         if (nodeFrom != null && nodeTo != null) {
                             show = true;
+                            lastSelFrom = tempLastSelFrom;
+                            lastSelTo = tempLastSelTo;
                         }
                     }
                 }
                 if (show) {
+                    ignoreSelChange = true;
                     let range = sel.getRangeAt(0).cloneRange();
                     let rect = range.getBoundingClientRect();
                     rect.left += window.scrollX;
@@ -1231,6 +1265,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     picker.style.top = (rect.top - picker.offsetHeight - 10) + "px";	
                     picker.style.left = ((rect.left + rect.right) / 2 - picker.offsetWidth / 2) + "px";  
                 } else {
+                    if (ignoreSelChange) {
+                        return;
+                    }
                     picker.style.display = 'none';
                 }
             });
@@ -1239,6 +1276,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 let sel = document.getSelection();
                 let picker = document.getElementById("picker");
                 if (sel.rangeCount == 0 || sel.toString().length == 0) {
+                    if (ignoreSelChange) {
+                        return;
+                    }
                     setTimeout(() => {
                         picker.style.display = 'none';
                     }, 100);
@@ -1250,6 +1290,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 let picker = document.getElementById("picker");
 
                 if (sel.rangeCount == 0 || sel.toString() == 0) {
+                    if (ignoreSelChange) {
+                        return;
+                    }
                     setTimeout(() => {
                         picker.style.display = 'none';
                     }, 100);
@@ -1440,7 +1483,12 @@ extraScript();
     </div>
 </div>
 
-<span id="picker" class="picker"><span onmousedown="downloadSel()">Download segment</span> | <span onmousedown="copySel()">Copy text</span></span>
+<span id="picker" class="picker">
+    <span onmousedown="downloadSel(true, event)" id="preview">Preview</span> or <span onmousedown="downloadSel(false, event)">download</span> segment | 
+    <span onmousedown="copySel()">Copy text</span><br>
+    Pad: Before <input type="text" id="padBefore", value="0" size="4">, After: <input type="text" id="padAfter", value="0" size="4"><br>
+    <span onmousedown="closeSel()" style="float:right;">Close</span>
+</span>
 <audio id="player" preload="metadata"><source src="[[MP3_NAME]]"></audio>
 
 </body>

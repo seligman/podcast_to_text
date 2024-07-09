@@ -7,9 +7,19 @@ from http.server import SimpleHTTPRequestHandler, HTTPServer
 import argparse
 import os
 import sys
+import io
+import html
+import urllib.parse
+import urllib.request
 if sys.version_info >= (3, 11): from datetime import UTC
 else: import datetime as datetime_fix; UTC=datetime_fix.timezone.utc
 
+def get_root_page():
+    ret = "<!DOCTYPE html><html><head><title>Pages</title></head><body>"
+    for cur in os.listdir("."):
+        if os.path.isfile(cur) and cur.endswith(".html"):
+            ret += f'<a href="{urllib.parse.quote_plus(cur)}">{html.escape(cur)}</a><br>'
+    return ret.encode("utf-8")
 class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
     def log_request(self, *args, **kw):
         print(f"{datetime.now(UTC).strftime('%d %H:%M:%S')}: {self.command} '{self.path}' [{self.headers.get('Range', '-')}]")
@@ -18,15 +28,21 @@ class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
         path = self.translate_path(self.path)
         ctype = self.guess_type(path)
 
-        if os.path.isdir(path):
-            return SimpleHTTPRequestHandler.send_head(self)
-
-        if not os.path.exists(path):
-            return self.send_error(404, self.responses.get(404)[0])
-
-        f = open(path, 'rb')
-        fs = os.fstat(f.fileno())
-        size = fs[6]
+        # Custom page with links to any built examples
+        if self.path == "/":
+            data = get_root_page()
+            f = io.BytesIO(data)
+            fs = None
+            size = len(data)
+            ctype = "text/html"
+        else:
+            if os.path.isdir(path):
+                return SimpleHTTPRequestHandler.send_head(self)
+            if not os.path.exists(path):
+                return self.send_error(404, self.responses.get(404)[0])
+            f = open(path, 'rb')
+            fs = os.fstat(f.fileno())
+            size = fs[6]
 
         start, end = 0, size-1
         if 'Range' in self.headers:
@@ -65,7 +81,8 @@ class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
         self.send_header('Accept-Ranges', 'bytes')
         self.send_header('Content-Range', f'bytes {start}-{end}/{size}')
         self.send_header('Content-Length', str(l))
-        self.send_header('Last-Modified', self.date_time_string(fs.st_mtime))
+        if fs is not None:
+            self.send_header('Last-Modified', self.date_time_string(fs.st_mtime))
         self.end_headers()
 
         return f
