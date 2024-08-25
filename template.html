@@ -217,6 +217,9 @@ p.current{
     :root{
         --extra_height:1.3;
     }
+    body{
+        touch-action: pan-y;
+    }
     span.current{
         scroll-margin:calc(1.5em + (var(--widget-height) * var(--extra_height))) 0 2.5em 0;
     }
