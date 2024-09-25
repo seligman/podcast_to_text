@@ -10,7 +10,7 @@ def get_id():
 
 def get_settings():
     return {
-        "limit_seconds": 7200, # Limit MP3 files to about 2 hours to prevent overloading Whisper
+        "limit_seconds": 9900, # Limit MP3 files to about 2:45 to prevent overloading Whisper
     }
 
 def get_opts():

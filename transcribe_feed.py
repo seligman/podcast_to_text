@@ -5,8 +5,9 @@ import email.utils, io, json, os, re, subprocess, sys
 import xml.etree.ElementTree as ET
 
 # Use WhisperX's Medium model for this example
+# This requires the enviornment variable HF_TOKEN be set
 DEFAULT_SETTINGS = {
-    "source_mp3": "<needed>",
+    "source_mp3": "<populated by code>",
     "engine": "whisperx",
     "engine_details": {
         "model": "medium",
@@ -25,6 +26,9 @@ def parse_rss(data):
         if elem is not None:
             return elem.text
         return None
+
+    # Set this to a value to bail of <x> number of items, -1 to parse them all
+    bail = -1
 
     for x in root.findall("./channel/item"):
         title = x.find("./title").text
@@ -46,6 +50,9 @@ def parse_rss(data):
             "enclosure": enclosure,
             "desc": desc,
         }
+        bail -= 1
+        if bail == 0:
+            break
 
 def clean(value, allow_special=True, max_len=80):
     # Return a string that's safe to use for a filename
@@ -127,7 +134,7 @@ def process_feed(rss_url, target_dir):
                 temp['source_mp3'] = os.path.join(target_dir, cur['filename'])
                 json.dump(temp, f)
 
-            subprocess.check_call(['./to_text.py', 'create_webpage', temp_fn])
+            subprocess.check_call(['python3', 'to_text.py', 'create_webpage_and_data', temp_fn])
 
             for fn in [temp_fn, temp_fn + ".gz"]:
                 if os.path.isfile(fn):

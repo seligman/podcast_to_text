@@ -79,8 +79,15 @@ def enumerate_words(data):
             word, start, end, speaker = frame
         yield word, start, end, speaker
 
+@opt("Transcribe an MP3 file and create a webpage, also save data")
+def create_webpage_and_data(settings_file):
+    creat_webpage_internal(settings_file, True)
+
 @opt("Transcribe an MP3 file and create a webpage")
 def create_webpage(settings_file):
+    creat_webpage_internal(settings_file)
+
+def creat_webpage_internal(settings_file, save_data=False):
     with open(settings_file, "rt", encoding="utf-8") as f:
         settings = json.load(f)
 
@@ -126,12 +133,17 @@ def create_webpage(settings_file):
         # Non-chunked data, just read and parse it as is
         data = engine.parse_data(data)
 
-    data = templater.fill_out(data, settings['source_mp3'])
     if "target_fn" in settings:
         dest = settings["target_fn"]
     else:
-        dest = settings['source_mp3'] + ".html"
-    with open(dest, "wt", newline="") as f:
+        dest = settings['source_mp3']
+
+    if save_data:
+        with gzip.open(dest + ".json.gz", "wt", newline="", encoding="utf-8") as f:
+            json.dump(data, f, separators=(',', ':'))
+
+    data = templater.fill_out(data, settings['source_mp3'])
+    with open(dest + ".html", "wt", newline="") as f:
         f.write(data)
     print(f"{dest} created!")
 

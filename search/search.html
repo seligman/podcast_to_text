@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"/>
+<link rel="icon" type="image/png" sizes="16x16" href="spyglass.png"/>
+<title>Search</title>
+<style>
+:root {
+    color-scheme: dark;
+}
+html,
+body {
+    background-color: #333;
+    color: #ccc;
+    font-family: "Roboto", sans-serif;
+    font-size: 12pt;
+}
+a {
+    color: #ccf;
+    text-decoration: none;
+}
+.clickable {
+    cursor: pointer;
+    color: #ccf;
+}
+.clickable:hover {
+    text-decoration: underline;
+}
+.transcriptLink {
+    font-size: 80%;
+    font-weight: normal;
+}
+h1 {
+    padding-left: 0.5em;
+    margin-top: 1.5em;
+    margin-bottom: 0.25em;
+    border-bottom: 1px solid #777;
+    font-size: 14pt;
+    color: #888;
+}
+.item {
+    padding-bottom: 0.25em;
+}
+ul {
+    list-style-type: none;
+}
+li {
+    margin-bottom: 0.5em;
+}
+a:hover {
+    color: #ccf;
+    text-decoration: underline;
+}
+.title {
+    font-weight: bold;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    border-bottom-color: #888;
+    padding-left: 1em;
+    padding-bottom: 0;
+    margin: 0;
+    font-size: 12pt;
+}
+.hit {
+    text-indent: -2em;
+    margin-left: 2em;
+}
+.created {
+    font-size: 8pt;
+}
+.target {
+    background-color: #44c;
+    color: #fff;
+}
+input[type="text"] {
+    background-color: #000;
+    color: #cec;
+    border-top-style: hidden;
+    border-right-style: hidden;
+    border-left-style: hidden;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    border-bottom-color: #a8a8f2;
+    padding: 2px;
+    outline: none;
+    font-size: 12pt;
+}
+</style>
+<script>
+let contextBefore = 5;
+let contextAfter = 500;
+let totalItems = 0;
+let info = null;
+let batches = null;
+let batchData = {};
+
+async function getData(data_num, start, len, loadMode='gzipDecode') {
+    const resp = await fetch(
+        "./search_data_" + String(data_num).padStart(2, '0') + ".dat", 
+        {
+            'headers': {
+                'Range': 'bytes=' + start + "-" + (start + len - 1),
+            },
+        },
+    );
+    if (loadMode == 'gzipDecode') {
+        const blob = await resp.blob();
+        const ds = new DecompressionStream("gzip");
+        const decomp = blob.stream().pipeThrough(ds);
+        const decoded = await new Response(decomp).blob();
+        const text = await decoded.text();
+        const parsed = JSON.parse(text);
+        return parsed;
+    } else if (loadMode == 'json') {
+        const text = await resp.text();
+        const parsed = JSON.parse(text);
+        return parsed;
+    }
+}
+
+function showHit(item, search, showAll, batch, itemID, paginator, countOnly) {
+    let ret = [];
+    let lastHit = 0;
+    
+    let findHits = handler => {
+        let words = item[search.title ? 'title' : 'words'].toLowerCase();
+        if (showAll) {
+            handler(0, 0);
+        } else if (search.regex) {
+            let target = search.terms.join(' ');
+            target = new RegExp(target, 'gi');
+            while (true) {
+                let hit = target.exec(words);
+                if (hit == null) {
+                    break;
+                }
+                if (!handler(hit.index, hit[0].length)) {
+                    break;
+                }
+            }
+        } else if (search.logic) {
+            let lastHit = -1;
+            while (true) {
+                let temp = search.logicFunc(words.slice(lastHit + 1));
+                if (!temp[0]) {
+                    break;
+                }
+                if (!handler(lastHit + 1 + temp[1], temp[2] - temp[1] + 1)) {
+                    break;
+                }
+                lastHit += temp[2];
+            }
+        } else {
+            let target = search.terms.join(' ').toLowerCase();
+            let lastHit = -1;
+            while (true) {
+                let hit = words.indexOf(target, lastHit + 1);
+                if (hit == -1) {
+                    break;
+                }
+                if (!handler(hit, target.length)) {
+                    break;
+                }
+                lastHit = hit;
+                if (search.title) {
+                    break;
+                }
+            }
+        }
+    };
+
+    let lookup = null;
+    let start = null;
+    let speaker = null;
+    let speakerPop = null;
+    let counts = null;
+    let hitCounts = [];
+
+    let extra = '';
+    if (window.location.hash.substring(1, 5) == "rid=") {
+        extra = atob(window.location.hash.substring(5));
+    }
+
+    let showHit = (hitAt, hitLen) => {
+        if (paginator.skip > 0) {
+            paginator.skip--;
+        } else if (countOnly) {
+            paginator.bail--;
+            paginator.found++;
+            hitCounts.push(0);
+            if (hitCounts.length == 1) {
+                paginator.foundTitles++;
+            }
+        } else {
+            let hit = document.createElement((search.title) ? "div": "p");
+            if (search.title) {
+                hit.className = 'item';
+            }
+            ret.push(hit);
+            let header;
+            if (search.title) {
+                link = document.createElement("a");
+                hit.appendChild(link);
+                header = hit;
+            } else {
+                header = document.createElement("h1");
+                hit.appendChild(header);
+                link = document.createElement("a");
+                header.appendChild(link);
+                header.className = "title";
+            }
+            link.href = item.link;
+            link.target = "_blank";
+            link.innerText = (item.published == '1970-01-01' ? '' : (item.published + ": ")) + item.title;
+            if (batch !== null) {
+                let span = document.createElement("span");
+                header.appendChild(span);
+                span.innerText = " ";
+                let fullLink = document.createElement("a");
+                header.appendChild(fullLink);
+                let count = document.createElement("span");
+                header.appendChild(count);
+                hitCounts.push(count);
+                if (hitCounts.length == 1) {
+                    paginator.foundTitles++;
+                }
+                fullLink.className = "transcriptLink";
+                fullLink.innerText = "[transcript]";
+                fullLink.target = "_blank";
+                if (extra.length > 0 && 'remote' in item) { 
+                    fullLink.href = extra + item.remote + ".html";
+                    if (!search.title) {
+                        fullLink.href += "#" + start[hitAt] * 10;
+                    }
+                } else {
+                    fullLink.href = "#" + batch[0] + "," + batch[1] + "," + batch[2] + "," + itemID;
+                    if (!search.title) {
+                        fullLink.href += "," + start[hitAt];
+                    }
+                }
+            }
+            
+            if (!search.title) {
+                let lastSpeaker = '';
+                let phraseStartAt = 0;
+                let startAt = -1;
+                let phrase = null;
+                let endedSentence = false;
+                for (let i = Math.max(0, hitAt - contextBefore); i <= (showAll ? (start.length - 1) : Math.min(hitAt + 1 + contextAfter, start.length - 1)); i++) {
+                    if (!showAll) {
+                        if (startAt >= 0 && ((start[i] / 100) - startAt) > 60) {
+                            break;
+                        }
+                    }
+                    let curSpeaker = "";
+                    if (phrase === null || (endedSentence && (lastSpeaker != speaker[i] || (start[i] - phraseStartAt) >= 45)) || (start[i] - phraseStartAt) >= 120) {
+                        if (lastSpeaker != speaker[i]) {
+                            curSpeaker = speakerPop[speaker[i]];
+                        }
+                        lastSpeaker = speaker[i];
+                        phraseStartAt = start[i];
+                        if (startAt === -1) {
+                            startAt = phraseStartAt;
+                        }
+                        
+                        let text = document.createElement('p');
+                        hit.appendChild(text);
+                        text.className = "hit";
+                        let time = document.createElement('span');
+                        text.appendChild(time);
+                        let at = start[i];
+                        let val = "";
+                        val += Math.floor(at / 3600).toString() + ":";
+                        val += (Math.floor(at / 60) % 60).toString().padStart(2, "0") + ":";
+                        val += (at % 60).toString().padStart(2, "0") + ":";
+                        time.innerText = val;
+                        phrase = document.createElement('span');
+                        text.appendChild(phrase);
+                    }
+
+                    let curWord = item.words.slice(lookup.word[i], lookup.word[i+1]-1);
+                    let wordElem = document.createElement('span');
+                    wordElem.at = start[i];
+                    if (!showAll) {
+                        if (i >= hitAt && i <= hitLen) {
+                            wordElem.className = "target";
+                        }
+                    }
+                    wordElem.innerText = curSpeaker + " " + curWord;
+                    phrase.appendChild(wordElem);
+                    curSpeaker = "";
+                    endedSentence = ".?!".includes(curWord.slice(-1));
+                }
+            }
+
+            paginator.bail--;
+            paginator.found++;
+        }
+        paginator.pos++;
+        if (showAll) {
+            return false;
+        }
+        if (paginator.bail == 0) {
+            let comment = document.createElement('span');
+            ret.push(comment);
+            comment.innerText = "View next page...";
+            comment.className = "clickable";
+            comment.onclick = () => {
+                window.scrollTo(0, 0);
+                searchFor(search.orig, paginator.pos).then();
+            };
+            return false;
+        }
+        return true;
+    };
+
+    findHits((hit, size) => {
+        if (lookup == null) {
+            lookup = {pos: [], word: []};
+            let wordNum = -1;
+            let off = 0;
+            let wasSpace = true;
+            for (let x of item.words) {
+                if (wasSpace) {
+                    wordNum++;
+                    lookup.word.push(off);
+                }
+                wasSpace = (x == ' ');
+                lookup.pos.push(wordNum);
+                off++;
+            }
+            lookup.word.push(off+1);
+
+            let last = 0;
+            start = [];
+            for (let cur of item.start) {
+                last += cur;
+                start.push(last);
+            }
+
+            speakerPop = {};
+            speaker = item.speaker.split('');
+            counts = {};
+            speaker.map(x => {
+                counts[x] = counts[x] ? counts[x] + 1 : 1;
+            });
+            counts["@"] = 0;
+            counts = Object.entries(counts);
+            counts.sort((a, b) => {
+                if (b < a) {
+                    return -1;
+                }
+                if (a > b) {
+                    return 1;
+                }
+                return 0;
+            });
+            counts.map(x => {
+                if (x[0] == "@") {
+                    speakerPop[x[0]] = '';
+                } else {
+                    speakerPop[x[0]] = ' ' + String.fromCharCode("A".charCodeAt(0) + Object.keys(speakerPop).length) + ": ";
+                }
+            });
+
+        }
+
+        if (!showHit(lookup.pos[hit], lookup.pos[hit+size])) {
+            return false;
+        }
+        return true;
+    });
+
+    if (hitCounts.length > 1) {
+        let i = 1;
+        for (let cur of hitCounts) {
+            cur.innerText = ` ${i} of ${hitCounts.length}`;
+            i++;
+        }
+    }
+
+    return ret;
+}
+
+async function showTranscript(data_num, start, len, itemID) {
+    let batch = await getData(data_num, start, len);
+    document.title = batch[itemID].title;
+    let items = showHit(batch[itemID], '', true, null, null, {skip: 0, pos: 0, bail: 9999, found: 0});
+    document.getElementById("results").replaceChildren(...items);
+}
+
+function notify(desc) {
+    let searching = document.createElement('span');
+    searching.innerText = desc;
+    document.getElementById("results").replaceChildren(searching);
+}
+
+async function searchFor(search, skip=0, countOnly=false) {
+    if (info === null) {
+        info = await getData(0, 0, 100, "json");
+        batches = await getData(...info.data);
+    }
+
+    if (!countOnly) {
+        notify("Searching...");
+    }
+
+    let searchTerms = search.split(' ');
+    let paginator = {
+        skip: skip, 
+        pos: 0, 
+        bail: countOnly ? 100000 : 100, 
+        found: 0,
+        foundTitles: 0,
+    };
+    search = {
+        terms: [],
+        before: null,
+        after: null,
+        regex: false,
+        logic: false,
+        title: false,
+        orig: search,
+    };
+
+    for (let word of searchTerms) {
+        let m = word.match(/^after:([^ ]+)( |$)/i);
+        if (m != null) {
+            search.after = m[1];
+            continue;
+        }
+        m = word.match(/^before:([^ ]+)( |$)/i);
+        if (m != null) {
+            search.before = m[1];
+            continue;
+        }
+        m = word.match(/^(?:regex|re):([^ ]+)( |$)/i);
+        if (m != null) {
+            search.terms.push(m[1]);
+            search.regex = true;
+            continue;
+        }
+        m = word.match(/^title:([^ ]+)( |$)/i);
+        if (m != null) {
+            search.terms.push(m[1]);
+            search.title = true;
+            continue;
+        }
+        m = word.match(/^logic:([^ ]+)( |$)/i);
+        if (m != null) {
+            search.terms.push(m[1]);
+            search.logic = true;
+            continue;
+        }
+        search.terms.push(word);
+    }
+
+    if (search.terms.join(' ') == 'list') {
+        search.title = true;
+        search.terms = [];
+        paginator.bail = 10000;
+    }
+
+    if (search.terms.join(' ') == 'latest') {
+        search.title = true;
+        search.terms = [];
+        paginator.skip = Math.max(0, totalItems - 25);
+        paginator.bail = 10000;
+    }
+
+    if (search.logic) {
+        let debugLogic = false;
+        let nearAmount = 200;
+        /* ########################################################################################################################################## */
+        let terms = [];
+        let state = {negate: false, new: true};
+        let dumpState = termsToDump => {
+            let termsPretty = [];
+            for (let x of termsToDump) {
+                if (x.oper == 'HIT') {
+                    if (x.negate) {
+                        termsPretty.push("!" + x.val);
+                    } else {
+                        termsPretty.push(x.val);
+                    }
+                } else {
+                    termsPretty.push(x.oper);
+                }
+            };
+            return termsPretty.join(" ");
+        };
+        if (debugLogic) {
+            console.log(`  Stack: '${search.terms.join("', '")}'`);
+        }
+        let isWhole = false;
+        for (let val of search.terms.join(' ').replace("(", " ( ").replace(")", " ) ").split(' ')) {
+            if (val.length > 0) {
+                if (val.search(/^(and|or|near)$/i) == 0) {
+                    terms.push({oper: val.toUpperCase()});
+                    state.new = true;
+                } else if (val.search(/^(whole)$/i) == 0) {
+                    isWhole = true;
+                } else if (val == "(") {
+                    terms.push({oper: "OPEN"});
+                } else if (val == ")") {
+                    terms.push({oper: "CLOSE"});
+                } else if (val.search(/^(not)$/i) == 0) {
+                    state.new = true;
+                    state.negate = true;
+                } else {
+                    if (state.new) {
+                        terms.push({whole: isWhole, oper: 'HIT', val: val, negate: state.negate});
+                        state.new = false;
+                        state.negate = false;
+                    } else {
+                        terms[terms.length-1].val += ' ' + val;
+                    }
+                }
+            }
+        };
+        if (debugLogic) {
+            console.log(`  Parsed: ${dumpState(terms)}`);
+        }
+
+        let hitOrVal = x => {
+            /* Just see if an item is a hit or a val */
+            return (x.oper == 'HIT') || (x.oper == 'VAL')
+        };
+
+        let isTrue = (x, words) => {
+            /* See if an item is a True bool, or a hit that matches */
+            if (x.oper == 'VAL') {
+                return x.val;
+            } else if (x.oper == 'HIT') {
+                let ret;
+                if (x.whole) {
+                    ret = words.search(new RegExp("\\b" + x.val.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&') + "\\b")) >= 0;
+                } else {
+                    ret = (words.indexOf(x.val) >= 0);
+                }
+                if (x.negate) {
+                    ret = !ret;
+                }
+                return ret;
+            } else {
+                throw new Error("Unable to parse syntax: " + JSON.stringify(x));
+            }
+        };
+
+        let isWord = x => {
+            /* See if an item is a positive hit */
+            return x.oper == 'HIT' && !x.negate;
+        };
+
+        let range = (words, x, y, dest) => {
+            /* Get extend of begin and end */
+
+            if (x !== null) {
+                if (x.oper == 'HIT' && x.begin == undefined && !x.negate) {
+                    let temp = words.indexOf(x.val);
+                    if (temp >= 0) {
+                        x.begin = temp;
+                        x.end = temp + x.val.length;
+                    }
+                }
+            }
+
+            if (y !== null) {
+                if (y.oper == 'HIT' && y.begin == undefined && !y.negate) {
+                    let temp = words.indexOf(y.val);
+                    if (temp >= 0) {
+                        y.begin = temp;
+                        y.end = temp + y.val.length;
+                    }
+                }
+            }
+
+            if (x != null && y != null && x.begin != undefined && y.begin != undefined) {
+                dest.begin = Math.min(x.begin, y.begin);
+            } else if (x != null && x.begin != undefined) {
+                dest.begin = x.begin;
+            } else if (y != null && y.begin != undefined) {
+                dest.begin = y.begin;
+            }
+
+            if (x != null && y != null && x.begin != undefined && y.begin != undefined) {
+                dest.end = Math.max(x.end, y.end);
+            } else if (x != null && x.begin != undefined) {
+                dest.end = x.end;
+            } else if (y != null && y.begin != undefined) {
+                dest.end = y.end;
+            }
+        };
+
+        let processTerms = (words, terms) => {
+            let stack = [...terms];
+            for (let cur of stack) {
+                cur.begin = undefined;
+                cur.end = undefined;
+            }
+
+            while (true) {
+                /* Find and resolve parens */
+                let foundPair = false;
+                let depth = 0;
+                let openAt = -1;
+                let i = -1;
+                for (let x of stack) {
+                    i++;
+                    if (x.oper == 'OPEN') {
+                        if (depth == 0) {
+                            openAt = i;
+                        }
+                        depth++;
+                    } else if (x.oper == 'CLOSE') {
+                        depth--;
+                        if (depth == 0) {
+                            /* Found an open and matching close, process the contents */
+                            let temp = processTerms(words, stack.slice(openAt + 1, i));
+                            stack = stack.slice(0, openAt).concat([{oper: 'VAL', val: temp[0], begin: temp[1], end: temp[2]}]).concat(stack.slice(i+1));
+                            foundPair = true;
+                            break;
+                        }
+                    }
+                };
+                if (!foundPair) {
+                    break;
+                }
+            }
+            while (stack.length > 1) {
+                if (stack.length >= 3 && ((stack[0].oper == 'VAL' && !stack[0].val) || (stack[2].oper == 'VAL' && !stack[2].val)) && stack[1].oper == 'NEAR') {
+                    /* x NEAR x, where one of the x is False */
+                    stack = [{oper: 'VAL', val: false}].concat(stack.slice(3));
+                } else if (stack.length >= 3 && stack[0].oper == 'HIT' && stack[1].oper == 'NEAR' && stack[2].oper == 'HIT') {
+                    /* x NEAR x, where both of the x are hit */
+
+                    let findMatch = (words, x, off) => {
+                        if (stack[0].whole) {
+                            let ret = words.slice(off).search(new RegExp("\\b" + x.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&') + "\\b"));
+                            if (ret >= 0) {
+                                return ret + off;
+                            } else {
+                                return ret;
+                            }
+                        } else {
+                            return words.indexOf(x, off);
+                        }
+                    };
+
+                    /* Find all the possible hits */
+                    let locs = x => {
+                        let ret = [];
+                        let i = -1;
+                        while ((i=findMatch(words,x,i+1)) >= 0) {
+                            ret.push(i);
+                        }
+                        return ret;
+                    };
+                    let nears = 0;
+                    let hits = [locs(stack[0].val)];
+                    while (stack.length >= (2 * (nears + 1)) && stack[1 + nears * 2].oper == 'NEAR' && stack[2 + nears * 2].oper == 'HIT') {
+                        hits.push(locs(stack[nears * 2 + 2].val));
+                        nears++;
+                    }
+                    let allGood = true;
+                    let pos = [];
+                    for (let a of hits[0]) {
+                        allGood = true;
+                        pos = [a];
+                        for (let other of hits.slice(1)) {
+                            let found = false;
+                            for (let b of other) {
+                                if (Math.abs(a - b) <= nearAmount) {
+                                    pos.push(b);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                allGood = false;
+                                break;
+                            }
+                        }
+                        if (allGood) {
+                            break;
+                        }
+                    }
+                    if (allGood) {
+                        stack = [stack[0]].concat(stack.slice(2 * nears + 1));
+                        stack[0].begin = Math.min(...pos);
+                        stack[0].end = Math.max(...pos);
+                    } else {
+                        stack = [{oper: 'VAL', val: false}].concat(stack.slice(2 * nears + 1));
+                    }
+
+                } else if (stack.length >= 3 && hitOrVal(stack[0]) && stack[1].oper == 'AND' && hitOrVal(stack[2])) {
+                    /* x AND x */
+                    if (isTrue(stack[0], words) && isTrue(stack[2], words) && isWord(stack[0]) && isWord(stack[2])) {
+                        range(words, stack[0], stack[2], stack[0]);
+                        stack = [stack[0]].concat(stack.slice(3));
+                    } else {
+                        let temp = {};
+                        range(words, stack[0], stack[2], temp);
+                        stack = [{oper: 'VAL', val: isTrue(stack[0], words) && isTrue(stack[2], words)}].concat(stack.slice(3));
+                        range(words, temp, temp, stack[0]);
+                    }
+                } else if (stack.length >= 3 && hitOrVal(stack[0]) && stack[1].oper == 'OR' && hitOrVal(stack[2])) {
+                    /* x OR x */
+                    if ((isTrue(stack[0], words) || isTrue(stack[2], words)) && isWord(stack[0]) && isWord(stack[2])) {
+                        if (isTrue(stack[0], words)) {
+                            stack = [stack[0]].concat(stack.slice(3));
+                        } else {
+                            stack = [stack[2]].concat(stack.slice(3));
+                        }
+                    } else {
+                        stack = [{oper: 'VAL', val: isTrue(stack[0], words) || isTrue(stack[2], words)}].concat(stack.slice(3));
+                    }
+                } else {
+                    throw new Error("Invalid operator: " + dumpState(stack));
+                }
+            }
+
+            if (stack.length == 1 && hitOrVal(stack[0])) {
+                range(words, stack[0], stack[0], stack[0]);
+                return [isTrue(stack[0], words), stack[0].begin, stack[0].end];
+            } else {
+                throw new Error('Invalid logic syntax: ' + dumpState(stack));
+            }
+        };
+
+        search.logicFunc = words => {
+            return processTerms(words, terms);
+        };
+        /* ########################################################################################################################################## */
+    }
+
+    let temp = [];
+    for (let batchInfo of batches) {
+        if (paginator.bail == 0) {
+            break;
+        }
+        let key = batchInfo.join('|');
+        if (!(key in batchData)) {
+            batchData[key] = await getData(...batchInfo);
+        }
+        let batch = batchData[key];
+        let itemID = -1;
+        for (let item of batch) {
+            itemID++;
+            if (paginator.bail == 0) {
+                break;
+            }
+
+            if (search.before != null) {
+                if (item.published >= search.before) {
+                    continue;
+                }
+            }
+            if (search.after != null) {
+                if (item.published <= search.after) {
+                    continue;
+                }
+            }
+
+            temp = temp.concat(showHit(item, search, false, batchInfo, itemID, paginator, countOnly));
+        }
+    }
+
+    if (countOnly) {
+        document.getElementById("totalsCount").innerText = 
+            `Found ${paginator.bail == 0 ? 'at least ' : ''}${commafy(paginator.found)} hits in ${commafy(paginator.foundTitles)} episodes`;
+    } else {
+        if (!search.title) {
+            if (paginator.found == 0) {
+                let comment = document.createElement('span');
+                temp.push(comment);
+                comment.innerText = "(No matches found)";
+            } else {
+                let comment = document.createElement('span');
+                temp.unshift(comment);
+                comment.innerText = `Found ${paginator.bail == 0 ? 'at least ' : ''}${commafy(paginator.found)} hits in ${commafy(paginator.foundTitles)} episodes`;
+                if (paginator.bail == 0) {
+                    comment.id = "totalsCount";
+                    let keep = document.createElement("span");
+                    keep.className = "clickable";
+                    keep.innerText = ", produce complete count.";
+                    keep.onclick = () => {
+                        searchFor(search.orig, 0, true).then();
+
+                    };
+                    comment.appendChild(keep);
+                }
+            }
+        }
+
+        document.getElementById("results").replaceChildren(...temp);
+    }
+}
+
+
+function commafy(val) {
+    return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+async function showCreation() {
+    let info = await getData(0, 0, 100, "json");
+    contextAfter = info.after;
+    contextBefore = info.before;
+    document.getElementById('created').innerHTML = `${info.created} with ${commafy(info.items)} entries`;
+    totalItems = info.items;
+}
+
+function cacheData(workers, startAt) {
+    if (info === null) {
+        getData(0, 0, 100, "json").then(newInfo => {
+            getData(...newInfo.data).then(newBatches => {
+                info = newInfo;
+                batches = newBatches;
+                for (let i = 0; i < workers; i++) {
+                    cacheData(workers, i);
+                }
+            });
+        });
+        return;
+    }
+
+    if (startAt < batches.length) {
+        let key = batches[startAt].join('|');
+        if (!(key in batchData)) {
+            getData(...batches[startAt]).then(data => {
+                batchData[key] = data;
+                cacheData(workers, startAt + workers);
+            });
+        }
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function(event) {
+    let info = window.location.hash.substring(1);
+    info = info.split(",");
+    if (info.length == 4 || info.length == 5) {
+        document.getElementById("search_input").innerHTML = '';
+        document.getElementById("footer").innerHTML = '';
+        showTranscript(parseInt(info[0]), parseInt(info[1]), parseInt(info[2]), parseInt(info[3])).then(() => {
+            if (info.length == 5) {
+                let at = parseInt(info[4]);
+                for (let cur of document.getElementsByTagName("span")) {
+                    if (cur.at >= at) {
+                        cur.scrollIntoView();
+                        break;
+                    }
+                }
+            }
+        });
+    } else {
+        showCreation().then(() => {
+            document.getElementById("search").focus();
+            cacheData(4, 0);
+        });
+    }
+});
+
+function handleKey(e) {
+    if (e.keyCode === 13) {
+        e.preventDefault();
+        let val = document.getElementById('search').value.trim();
+        if (val.length > 0) {
+            searchFor(val).then().catch(e => {
+                notify("ERROR: " + e);
+            });
+        }
+    }
+}
+</script>
+</head>
+<body>
+<span id="search_input">
+Search term: <input id="search" type="text" size=50 autocomplete="off" autocorrect="off" onkeyup="handleKey(event);"><br>
+<span style="font-size: 80%;">
+Usage:<br>
+<div style="margin-left: 1em;">
+"search term" = Search for "seach term"<br>
+"list" = Show a list of all items<br>
+"latest" = Show a list of most recent items<br>
+"... after:xxx" = Show items that are published after xxx<br>
+"... before:xxx" = Show items that are published before xxx<br>
+"regex:xxx" = Search using regular expressions<br>
+"logic:xxx" = Search using logic operators: AND, OR, NOT, NEAR, WHOLE, ()<br>
+"title:xxx" = Search in the titles<br>
+</div>
+</span>
+<br>
+</span>
+<span id="results">...</span>
+<span class="created" id="footer"><hr>
+Created: <span id="created">(loading)</span>
+<!-- example_link -->
+</span>
+</body>
+</html>
