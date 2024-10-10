@@ -46,12 +46,12 @@ class ReadMP3:
                 skip = self.read(4)
                 skip = (skip[0] << 21) + (skip[1] << 14) + (skip[2] << 7) + skip[3]
                 self.read(skip)
-            elif self.header[0] == 0xff and (self.header[1] >> 4) == 0xf:
+            elif self.header[0] == 0xff and (self.header[1] >> 5) == 0x7:
                 # We found the sync bytes, cautiously read the rest of the data
                 # Anything that's invalid causes a short circuit to ignore the frame
                 valid = True
                 if valid:
-                    self.mpeg_ver = {0: 2.5, 2: 2, 3: 1}.get((self.header[1] >> 3) & 0x3)
+                    self.mpeg_ver = {0: 25, 2: 2, 3: 1}.get((self.header[1] >> 3) & 0x3)
                     if self.mpeg_ver is None:
                         valid = False
                 if valid:
@@ -68,6 +68,9 @@ class ReadMP3:
                         (2, 1): [32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256],
                         (2, 2): [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
                         (2, 3): [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+                        (25, 1): [32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256],
+                        (25, 2): [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+                        (25, 3): [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
                     }.get((self.mpeg_ver, self.layer))
                     if bitrate is None:
                         valid = False
@@ -80,7 +83,7 @@ class ReadMP3:
                     sample_rate = {
                         1: [44100, 48000, 32000],
                         2: [22050, 24000, 16000],
-                        2.5: [11025, 12000, 8000],
+                        25: [11025, 12000, 8000],
                     }.get(self.mpeg_ver)
                     if sample_rate is None:
                         valid = False
@@ -95,7 +98,11 @@ class ReadMP3:
                     self.padding = (self.header[2] >> 1) & 0x1
                     self.channel_mode = (self.header[3] >> 6) & 0x3
                     self.padding_size = {1: 4, 2: 1, 3: 1}[self.layer]
-                    self.samples_per_frame = {(1, 1): 384, (1, 2): 1152, (1, 3): 1152, (2, 1): 192, (2, 2): 1152, (2, 3): 576}[(self.mpeg_ver, self.layer)]
+                    self.samples_per_frame = {
+                        (1, 1): 384, (1, 2): 1152, (1, 3): 1152, 
+                        (2, 1): 192, (2, 2): 1152, (2, 3): 576,
+                        (25, 1): 192, (25, 2): 1152, (25, 3): 576,
+                    }[(self.mpeg_ver, self.layer)]
                     self.size = self.samples_per_frame // 8 * (self.bitrate * 1000) // self.sample_rate + (self.padding * self.padding_size)
                     # This read will pull in the data, except for the self.header, and skip to the next frame
                     self.data = self.read(self.size - 4)
