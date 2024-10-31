@@ -709,10 +709,8 @@ function updateScrolls() {
 }
 
 function posChanging(includeScrolls=true) {
-    if (includeScrolls) {
-        updateScrolls();
-    }
-    document.getElementById("posText").innerHTML = getTick(pos.value / 10) + '<br><font size="-1">' + ('-' + getTick((pos.max - pos.value) / 10)) + "</font>";
+    document.getElementById("posCurrent").innerText = getTick(pos.value / 10);
+    document.getElementById("posLeft").innerText = getTick((pos.max - pos.value) / 10);
 }
 
 function hideDrop() {
@@ -1426,7 +1424,7 @@ extraScript();
         <path class="forPause" d="M 66 30 L 66 50 L 66 70" rx="10" ry="10" style="stroke-width:8px;stroke:#bbf;fill:#bbf;stroke-linejoin:round;stroke-linecap:round;" />
     </svg>
     <input class="slider fill" type="range" min="0" max="1000" value="0" id="pos" onchange="posChange()" oninput="posChanging()" onmousedown="posMoving()" onmouseup="posMoved()">
-    <span id="posText">0:00:00<br><font size="-1">-0:00:00</font></span>
+    <span id="posText"><span id="posCurrent">0:00:00</span><br><font size="-1">-<span id="posLeft">0:00:00</span></font></span>
     <span class="link">
         <svg fill="#bbf" stle="width:50px" viewBox="-5 -5 70 70" width="24" height="24" onclick="showLinks()" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd">
             <g transform="matrix(1,0,0,1,-1088,-192)">
