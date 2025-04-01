@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__version__ = 48        # Version of this package
+__version__ = 49        # Version of this package
 DEBUG_PRINT = False     # Set this to True to log all print() output
 DEBUG_INPUT = False     # Set this to True to log all input received
 DELAY_INPUT = False     # Set this to True to take 1 second to process each key
@@ -282,6 +282,8 @@ def enable_ansi():
 
 
 def get_term_size(getch):
+    return 120, 30
+
     # Get the size of the terminal, really, just move to the bottom right corner, 
     # ask the terminal "where are we", and report the results
     enable_ansi()
@@ -301,7 +303,7 @@ def get_term_size(getch):
         return int(temp[1]), int(temp[0])
     else:
         # Otherwise, just return a default value
-        return 25, 80
+        return 80, 25
 
 def _split_items(opts, multiline, width):
     temp = []
