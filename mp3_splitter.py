@@ -181,7 +181,7 @@ def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None, fn_extra=""):
         offsets.append([0, 0])
         while mp3.next():
             total_len += mp3.beats
-            if total_len / mp3.beat_rate > len(offsets) * batch_size:
+            if total_len / ReadMP3.BEAT_RATE > len(offsets) * batch_size:
                 offsets.append([mp3.loc, 0])
             offsets[-1][1] += mp3.beats
 
@@ -206,8 +206,8 @@ def chunk_mp3(fn, duration_in_seconds=None, size_in_bytes=None, fn_extra=""):
         for i, chunk in enumerate(offsets):
             duration = sum(x[1] for x in chunk)
             new_entry = {
-                'offset': offset / mp3.beat_rate,
-                'duration': duration / mp3.beat_rate,
+                'offset': offset / ReadMP3.BEAT_RATE,
+                'duration': duration / ReadMP3.BEAT_RATE,
                 'fn': f"{fn}{fn_extra}_chunk_{len(ret):04d}.mp3",
             }
             offset += duration
