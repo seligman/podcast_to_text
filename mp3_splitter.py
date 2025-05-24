@@ -4,7 +4,7 @@ import sys, os
 
 class ReadMP3:
     # The version of this helper class
-    READMP3_VERSION = 8
+    READMP3_VERSION = 9
 
     # Some lookup tables for parsing the MP3 format
     MP3_VERS = {0: 25, 2: 2, 3: 1}
@@ -128,7 +128,7 @@ class ReadMP3:
 
     # Helper method to run through the MP3 and get the total duration of the MP3
     @staticmethod
-    def get_duration(f, use_buffer=False, include_size=False):
+    def get_duration(f, use_buffer=False, include_size=False, include_bitrate=False):
         if use_buffer:
             # If use_buffer is enabled, then read in large chunks
             # this can prevent network round trip delays if the file handle
@@ -156,13 +156,34 @@ class ReadMP3:
             mp3 = ReadMP3(buffer)
         else:
             mp3 = ReadMP3(f)
-        mp3.read_till_end()
+
+        if include_bitrate:
+            from collections import defaultdict
+            bitrates = defaultdict(int)
+            while mp3.next():
+                bitrates[mp3.bitrate] += 1
+            if len(bitrates) == 0:
+                bitrate, is_cbr = 0, 0
+            else:
+                bitrate = sum(k * v for k, v in bitrates.items()) / sum(bitrates.values())
+                is_cbr = len(bitrates) == 1
+        else:
+            mp3.read_till_end()
+
+        ret = (mp3.offset,)
+
         if include_size:
             from os import SEEK_END
             f.seek(0, SEEK_END)
-            return mp3.offset, f.tell()
+            ret += (f.tell(),)
+
+        if include_bitrate:
+            ret += (bitrate, is_cbr)
+
+        if len(ret) == 1:
+            return ret[0]
         else:
-            return mp3.offset
+            return ret
 
 # Helper to split an array into n mostly equally length arrays
 def split_array(a, n):
