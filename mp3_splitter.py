@@ -4,7 +4,7 @@ import sys, os
 
 class ReadMP3:
     # The version of this helper class
-    READMP3_VERSION = 9
+    READMP3_VERSION = 10
 
     # Some lookup tables for parsing the MP3 format
     MP3_VERS = {0: 25, 2: 2, 3: 1}
@@ -128,35 +128,8 @@ class ReadMP3:
 
     # Helper method to run through the MP3 and get the total duration of the MP3
     @staticmethod
-    def get_duration(f, use_buffer=False, include_size=False, include_bitrate=False):
-        if use_buffer:
-            # If use_buffer is enabled, then read in large chunks
-            # this can prevent network round trip delays if the file handle
-            # is in fact a network stream
-            class BufferReader:
-                def __init__(self):
-                    self.chunk = b''
-                    self.off = 0
-                def read(self, to_read):
-                    ret = None
-                    if to_read > len(self.chunk) - self.off:
-                        if len(self.chunk) - self.off > 0:
-                            ret = self.chunk[self.off:]
-                            to_read -= len(ret)
-                        self.chunk = f.read(33554432)
-                        self.off = 0
-                    if to_read > 0:
-                        if ret is None:
-                            ret = self.chunk[self.off:self.off+to_read]
-                        else:
-                            ret += self.chunk[self.off:self.off+to_read]
-                    self.off += to_read
-                    return b'' if ret is None else ret
-            buffer = BufferReader()
-            mp3 = ReadMP3(buffer)
-        else:
-            mp3 = ReadMP3(f)
-
+    def get_duration(f, include_size=False, include_bitrate=False):
+        mp3 = ReadMP3(f)
         if include_bitrate:
             from collections import defaultdict
             bitrates = defaultdict(int)
