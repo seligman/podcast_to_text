@@ -18,7 +18,7 @@ Supported engines:
 
 ## Search:
 
-Please see [search_instructions.md] for details on how to use a couple of helper scripts in this repo to download a podcast, transcribe all audio files in it, and create a search page to search the transcripts of the podcast.
+Please see [`search_instructions.md`](search_instructions.md) for details on how to use a couple of helper scripts in this repo to download a podcast, transcribe all audio files in it, and create a search page to search the transcripts of the podcast.
 
 ## Finally:
 
