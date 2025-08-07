@@ -1,88 +1,348 @@
 <!DOCTYPE html>
-<html><head>
+<html lang="en">
+<head>
 <meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" sizes="16x16" href="spyglass.png"/>
-<title>Search</title>
+<title><!-- search_title --></title>
 <style>
-:root {
-    color-scheme: dark;
+:root{
+    color-scheme: light dark;
+
+    --bg-color:light-dark(#ededed, #121212);
+    --card-color:light-dark(#e1e1e1, #1e1e1e);
+    --text-color:light-dark(#1f1f1f, #e0e0e0);
+    --accent-text:light-dark(#ffffff, #000000);
+    --accent-color:light-dark(#00005f, #a0a0ff);
+    --accent-hover:light-dark(#00003f, #c0c0ff);
+    --border-color:light-dark(#cccccc, #333333);
+    --secondary-color:light-dark(#d2d2d2, #2d2d2d);
+    --error-color:light-dark(#993043, #cf6679);
+    --highlight-color:light-dark(#ffffff, #ffffff);
+    --highlight-background:light-dark(#3f3fbf, #4040c0);
 }
-html,
-body {
-    background-color: #333;
-    color: #ccc;
-    font-family: "Roboto", sans-serif;
-    font-size: 12pt;
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Roboto",sans-serif;
+    font-size:12pt;
 }
-a {
-    color: #ccf;
-    text-decoration: none;
+.segment{
+    background-color: light-dark(#bbb, #444);
+    padding: 6px;
+    margin-bottom: 1em;
 }
-.clickable {
-    cursor: pointer;
-    color: #ccf;
+.clickable{
+    cursor:pointer;
+    color:var(--accent-color);
 }
-.clickable:hover {
-    text-decoration: underline;
+.clickable:hover{
+    text-decoration:underline;
 }
-.transcriptLink {
-    font-size: 80%;
-    font-weight: normal;
+.target{
+    background-color:var(--highlight-background);
+    color:var(--highlight-color);
+    box-shadow: 0.5ch 0.25ch var(--highlight-background), 0.5ch -0.25ch var(--highlight-background), -0.5ch 0.25ch var(--highlight-background), -0.5ch -0.25ch var(--highlight-background);
 }
-h1 {
-    padding-left: 0.5em;
-    margin-top: 1.5em;
-    margin-bottom: 0.25em;
-    border-bottom: 1px solid #777;
-    font-size: 14pt;
-    color: #888;
+body{
+    background-color:var(--bg-color);
+    color:var(--text-color);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:2rem;
 }
-.item {
-    padding-bottom: 0.25em;
+.created{
+    font-size:8pt;
+    padding-top:0.25em;
 }
-ul {
-    list-style-type: none;
+.created span{
+    font-size:8pt;
 }
-li {
-    margin-bottom: 0.5em;
+.container{
+    width:100%;
 }
-a:hover {
-    color: #ccf;
-    text-decoration: underline;
+header{
+    margin-bottom:2rem;
+    text-align:center;
 }
-.title {
-    font-weight: bold;
-    border-bottom-style: solid;
-    border-bottom-width: 1px;
-    border-bottom-color: #888;
-    padding-left: 1em;
-    padding-bottom: 0;
-    margin: 0;
-    font-size: 12pt;
+.page-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
 }
-.hit {
-    text-indent: -2em;
-    margin-left: 2em;
+.title-text p {
+    font-size: 1rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    font-weight: 400;
 }
-.created {
-    font-size: 8pt;
+h1{
+    font-size:2.5rem;
+    margin-bottom:0.5rem;
+    color:var(--accent-color);
 }
-.target {
-    background-color: #44c;
-    color: #fff;
+.search-card{
+    background-color:var(--card-color);
+    border-radius:8px;
+    padding:2rem;
+    box-shadow:0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom:2rem;
 }
-input[type="text"] {
-    background-color: #000;
-    color: #cec;
-    border-top-style: hidden;
-    border-right-style: hidden;
-    border-left-style: hidden;
-    border-bottom-style: solid;
-    border-bottom-width: 1px;
-    border-bottom-color: #a8a8f2;
-    padding: 2px;
-    outline: none;
-    font-size: 12pt;
+.search-form{
+    display:flex;
+    flex-direction:column;
+    gap:1.2rem;
+}
+.search-bar {
+    display:flex;
+    gap:0.5rem;
+}
+.search-style {
+    width:auto;
+    flex:0 0 auto;
+}
+input[type=checkbox]:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+input[type=checkbox]:disabled+label{
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+input[type="text"],select{
+    flex:1;
+    padding:0.75rem 1rem;
+    font-size:1rem;
+    background-color:var(--secondary-color);
+    color:var(--text-color);
+    border:1px solid var(--border-color);
+    border-radius:4px;
+    outline:none;
+    transition:border-color 0.3s;
+}
+input[type="text"]:focus,select:focus {
+    border-color:var(--accent-color);
+}
+select{
+    cursor:pointer;
+    appearance:none;
+    padding-right:2rem;
+    background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat:no-repeat;
+    background-position:right 0.7rem center;
+    background-size:1rem;
+}
+button{
+    padding:0.75rem 1.5rem;
+    font-size:1rem;
+    background-color:var(--accent-color);
+    color:var(--accent-text);
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
+    transition:background-color 0.3s;
+}
+button:hover{
+    background-color:var(--accent-hover);
+}
+.search-options{
+    display:flex;
+    flex-wrap:wrap;
+    gap:1.5rem;
+}
+.option-group{
+    min-width:200px;
+}
+.option-label{
+    font-size:0.9rem;
+    font-weight:600;
+    margin-bottom:0.5rem;
+    display:block;
+    color:var(--accent-color);
+}
+.time-inputs{
+    display:flex;
+    gap:1rem;
+}
+.time-input{
+    flex:1;
+}
+.time-input input{
+    width:10em;
+}
+.checkbox-group{
+    display:flex;
+    align-items:center;
+    gap:0.5rem;
+    margin-top:0.5rem;
+}
+input[type="checkbox"]{
+    appearance:none;
+    width:18px;
+    height:18px;
+    border:2px solid var(--border-color);
+    border-radius:3px;
+    background-color:var(--secondary-color);
+    cursor:pointer;
+    position:relative;
+}
+input[type="checkbox"]:checked{
+    background-color:var(--accent-color);
+    border-color:var(--accent-color);
+}
+input[type="checkbox"]:checked::after{
+    content:"";
+    position:absolute;
+    left:5px;
+    top:2px;
+    width:5px;
+    height:10px;
+    border:solid var(--accent-text);
+    border-width:0 2px 2px 0;
+    transform:rotate(45deg);
+}
+.results-container{
+    background-color:var(--card-color);
+    border-radius:8px;
+    padding:1.5rem;
+    box-shadow:0 4px 6px rgba(0,0,0,0.1);
+}
+.results-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:1.5rem;
+    padding-bottom:0.75rem;
+    border-bottom:1px solid var(--border-color);
+}
+.result-stats{
+    font-size:0.9rem;
+    color:var(--text-color);
+}
+.result-sort{
+    display:flex;
+    align-items:center;
+    gap:0.5rem;
+}
+.result-sort select{
+    padding:0.5rem;
+    font-size:0.9rem;
+}
+.result-item{
+    padding:1.2rem;
+    border-bottom:1px solid var(--border-color);
+}
+.result-item:last-child{
+    border-bottom:none;
+}
+.result-title{
+    font-size:1.2rem;
+    margin-bottom:0.5rem;
+    color:var(--accent-color);
+}
+.result-title a{
+    color:var(--accent-color);
+    text-decoration:none;
+}
+.result-title a:hover{
+    text-decoration:underline;
+}
+.result-description{
+    font-size:0.95rem;
+    line-height:1.5;
+}
+.pagination{
+    display:flex;
+    justify-content:center;
+    margin-top:2rem;
+    gap:0.5rem;
+}
+.page-btn{
+    padding:0.5rem 1rem;
+    background-color:var(--secondary-color);
+    color:var(--text-color);
+    border:1px solid var(--border-color);
+    border-radius:4px;
+    cursor:pointer;
+    transition:all 0.3s;
+}
+.page-btn:hover:not(.active){
+    background-color:light-dark(#ccc, #333);
+}
+.page-btn.active{
+    background-color:var(--accent-color);
+    border-color:var(--accent-color);
+    color:var(--accent-text);
+}
+.quick-links{
+    display:flex;
+    gap:1.5rem;
+    margin-top:1.2rem;
+}
+.quick-link{
+    color:var(--accent-color);
+    text-decoration:none;
+    font-size:0.95rem;
+    position:relative;
+    transition:color 0.2s;
+}
+.quick-link:hover{
+    color:var(--accent-hover);
+    text-decoration:underline;
+}
+.quick-link::after{
+    content:"\2192";
+    position:relative;
+    display:inline-block;
+    margin-left:4px;
+    transition:transform 0.2s;
+}
+.quick-link:hover::after{
+    transform:translateX(3px);
+}
+.hit{
+    margin-bottom:0.5em;
+    line-height:125%;
+    text-indent:-2em;
+    margin-left:2em;
+}
+@media(max-width:768px){
+    body{
+        padding:0.5rem;
+    }
+    .page-title {
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem 0;
+    }
+    .search-bar{
+        flex-direction:column;
+    }
+    .search-options{
+        flex-direction:column;
+        gap:1rem;
+    }
+    .option-group{
+        width:100%;
+    }
+    .search-card,.results-container{
+        border-radius:4px;
+        padding:1rem;
+    }
+    .result-item{
+        padding:0.8rem;
+    }
+    .search-form{
+        gap:0.8rem;
+    }
+    .hit{
+        text-indent:-1em;
+        margin-left:1em;
+    }
 }
 </style>
 <script>
@@ -92,29 +352,86 @@ let totalItems = 0;
 let info = null;
 let batches = null;
 let batchData = {};
+let pages = {'terms': '', 'pages': []};
+
+async function fetchWithRetry(url, start, len) {
+    const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
+    if (!isChrome) {
+        /* FireFox is silly, so be silly in response */
+        const resp = await fetch(url);
+        if (!resp.ok) {
+            throw new Error(`HTTP error! status: ${resp.status}`);
+        }
+        const fullBlob = await resp.blob();
+        const endByte = Math.min(start + len, fullBlob.size);
+        const subsetBlob = fullBlob.slice(start, endByte);
+        return subsetBlob;
+    }
+  
+    const chunks = [];
+    let currentStart = start;
+    let remainingBytes = len;
+  
+    while (remainingBytes > 0) {
+        const chunkEnd = currentStart + remainingBytes - 1;
+        const resp = await fetch(
+            url,
+            {
+                'headers': {
+                    'Range': `bytes=${currentStart}-${chunkEnd}`,
+                },
+            }
+        );
+        if (!resp.ok) {
+            throw new Error(`HTTP error! status: ${resp.status}`);
+        }
+        const chunk = await resp.blob();
+        if (chunk.size === 0) {
+            throw new Error(`Request returned 0 bytes for range ${currentStart}-${chunkEnd}`);
+        }
+    
+        chunks.push(chunk);
+        const bytesReceived = chunk.size;
+        currentStart += bytesReceived;
+        remainingBytes -= bytesReceived;
+    }
+    return new Blob(chunks);
+}
 
 async function getData(data_num, start, len, loadMode='gzipDecode') {
-    const resp = await fetch(
-        "./search_data_" + String(data_num).padStart(2, '0') + ".dat", 
-        {
-            'headers': {
-                'Range': 'bytes=' + start + "-" + (start + len - 1),
-            },
-        },
-    );
+    let resp;
+    if (Number.isFinite(data_num)) {
+        const url = "./search_data_" + String(data_num).padStart(2, '0') + ".dat";
+        data = await fetchWithRetry(url, start, len);
+    } else {
+        resp = await fetch("./search_data_" + data_num + ".dat");
+        data = await resp.blob();
+    }
+
     if (loadMode == 'gzipDecode') {
-        const blob = await resp.blob();
         const ds = new DecompressionStream("gzip");
-        const decomp = blob.stream().pipeThrough(ds);
+        const decomp = data.stream().pipeThrough(ds);
         const decoded = await new Response(decomp).blob();
         const text = await decoded.text();
         const parsed = JSON.parse(text);
         return parsed;
     } else if (loadMode == 'json') {
-        const text = await resp.text();
+        const text = await data.text();
         const parsed = JSON.parse(text);
         return parsed;
     }
+}
+
+function escapeRe(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function cacheLoad(batchInfo) {
+    let key = batchInfo.join('|');
+    if (!(key in batchData)) {
+        batchData[key] = await getData(...batchInfo);
+    }
+    return batchData[key];
 }
 
 function showHit(item, search, showAll, batch, itemID, paginator, countOnly) {
@@ -123,46 +440,56 @@ function showHit(item, search, showAll, batch, itemID, paginator, countOnly) {
     
     let findHits = handler => {
         let words = item[search.title ? 'title' : 'words'].toLowerCase();
-        if (showAll) {
-            handler(0, 0);
-        } else if (search.regex) {
-            let target = search.terms.join(' ');
-            target = new RegExp(target, 'gi');
-            while (true) {
-                let hit = target.exec(words);
-                if (hit == null) {
-                    break;
-                }
-                if (!handler(hit.index, hit[0].length)) {
-                    break;
+        let parseItem = true;
+
+        if (search.hasOwnProperty("groups") && search.groups.length > 0) {
+            parseItem = false;
+            for (let x of search.groups) {
+                if (x == item['group']) {
+                    parseItem = true;
                 }
             }
-        } else if (search.logic) {
-            let lastHit = -1;
-            while (true) {
-                let temp = search.logicFunc(words.slice(lastHit + 1));
-                if (!temp[0]) {
-                    break;
+        }
+
+        if (parseItem) {
+            if (showAll || (search.title && search.terms.join(' ').length == 0)) {
+                handler(0, 0);
+            } else if (search.regex) {
+                let target = search.terms.join(' ');
+                target = new RegExp(target, 'gi');
+                while (true) {
+                    let hit = target.exec(words);
+                    if (hit == null) {
+                        break;
+                    }
+                    if (!handler(hit.index, hit[0].length)) {
+                        break;
+                    }
                 }
-                if (!handler(lastHit + 1 + temp[1], temp[2] - temp[1] + 1)) {
-                    break;
+            } else if (search.logic) {
+                let lastHit = -1;
+                while (true) {
+                    let temp = search.logicFunc(words.slice(lastHit + 1));
+                    if (!temp[0]) {
+                        break;
+                    }
+                    if (!handler(lastHit + 1 + temp[1], temp[2] - temp[1] + 1)) {
+                        break;
+                    }
+                    lastHit += temp[2];
                 }
-                lastHit += temp[2];
-            }
-        } else {
-            let target = search.terms.join(' ').toLowerCase();
-            let lastHit = -1;
-            while (true) {
-                let hit = words.indexOf(target, lastHit + 1);
-                if (hit == -1) {
-                    break;
-                }
-                if (!handler(hit, target.length)) {
-                    break;
-                }
-                lastHit = hit;
-                if (search.title) {
-                    break;
+            } else {
+                let target = search.terms.join(' ');
+                target = target.split('').map(x=>escapeRe(x)+'-?').join('');
+                target = RegExp(target, 'gi');
+                while (true) {
+                    let hit = target.exec(words);
+                    if (hit == null) {
+                        break;
+                    }
+                    if (!handler(hit.index, hit[0].length)) {
+                        break;
+                    }
                 }
             }
         }
@@ -191,26 +518,26 @@ function showHit(item, search, showAll, batch, itemID, paginator, countOnly) {
                 paginator.foundTitles++;
             }
         } else {
-            let hit = document.createElement((search.title) ? "div": "p");
-            if (search.title) {
-                hit.className = 'item';
+            let hit = document.createElement("div");
+            if (!search.title) {
+                hit.className = "result-item";
             }
             ret.push(hit);
-            let header;
-            if (search.title) {
-                link = document.createElement("a");
-                hit.appendChild(link);
-                header = hit;
-            } else {
-                header = document.createElement("h1");
-                hit.appendChild(header);
-                link = document.createElement("a");
-                header.appendChild(link);
-                header.className = "title";
-            }
+
+            let header = document.createElement("h3");
+            header.className = "result-title";
+            hit.appendChild(header);
+
+            let link = document.createElement("a");
+            header.appendChild(link);
             link.href = item.link;
             link.target = "_blank";
             link.innerText = (item.published == '1970-01-01' ? '' : (item.published + ": ")) + item.title;
+
+            let info = document.createElement("p");
+            info.className = "result-description";
+            hit.appendChild(info);
+
             if (batch !== null) {
                 let span = document.createElement("span");
                 header.appendChild(span);
@@ -227,7 +554,7 @@ function showHit(item, search, showAll, batch, itemID, paginator, countOnly) {
                 fullLink.innerText = "[transcript]";
                 fullLink.target = "_blank";
                 if (extra.length > 0 && 'remote' in item) { 
-                    fullLink.href = extra + item.remote + ".html";
+                    fullLink.href = extra + item.remote.split("\t")[0] + ".html";
                     if (!search.title) {
                         fullLink.href += "#" + start[hitAt] * 10;
                     }
@@ -245,6 +572,14 @@ function showHit(item, search, showAll, batch, itemID, paginator, countOnly) {
                 let startAt = -1;
                 let phrase = null;
                 let endedSentence = false;
+                let segments = [];
+                if (showAll) {
+                    if (item.hasOwnProperty("segments")) {
+                        for (let i = 0; i < item.segments.title.length; i++) {
+                            segments.push([item.segments.offset[i], item.segments.title[i]]);
+                        }
+                    }
+                }
                 for (let i = Math.max(0, hitAt - contextBefore); i <= (showAll ? (start.length - 1) : Math.min(hitAt + 1 + contextAfter, start.length - 1)); i++) {
                     if (!showAll) {
                         if (startAt >= 0 && ((start[i] / 100) - startAt) > 60) {
@@ -262,6 +597,18 @@ function showHit(item, search, showAll, batch, itemID, paginator, countOnly) {
                             startAt = phraseStartAt;
                         }
                         
+                        let segmentTitle = null;
+                        while (segments.length > 0 && segments[0][0] <= phraseStartAt) {
+                            segmentTitle = segments.shift()[1];
+                        }
+                        if (segmentTitle != null) {
+                            let text = document.createElement("p");
+                            text.className = "segment";
+                            text.innerText = "Segment: " + segmentTitle;
+                            hit.appendChild(text);
+                        }
+
+
                         let text = document.createElement('p');
                         hit.appendChild(text);
                         text.className = "hit";
@@ -285,7 +632,11 @@ function showHit(item, search, showAll, batch, itemID, paginator, countOnly) {
                             wordElem.className = "target";
                         }
                     }
-                    wordElem.innerText = curSpeaker + " " + curWord;
+                    if (curSpeaker.length > 0) {
+                        phrase.appendChild(document.createTextNode(curSpeaker));
+                    }
+                    phrase.appendChild(document.createTextNode(" "));
+                    wordElem.innerText = curWord;
                     phrase.appendChild(wordElem);
                     curSpeaker = "";
                     endedSentence = ".?!".includes(curWord.slice(-1));
@@ -299,15 +650,7 @@ function showHit(item, search, showAll, batch, itemID, paginator, countOnly) {
         if (showAll) {
             return false;
         }
-        if (paginator.bail == 0) {
-            let comment = document.createElement('span');
-            ret.push(comment);
-            comment.innerText = "View next page...";
-            comment.className = "clickable";
-            comment.onclick = () => {
-                window.scrollTo(0, 0);
-                searchFor(search.orig, paginator.pos).then();
-            };
+        if (paginator.bail == 0 && search.show_next) {
             return false;
         }
         return true;
@@ -316,52 +659,53 @@ function showHit(item, search, showAll, batch, itemID, paginator, countOnly) {
     findHits((hit, size) => {
         if (lookup == null) {
             lookup = {pos: [], word: []};
-            let wordNum = -1;
-            let off = 0;
-            let wasSpace = true;
-            for (let x of item.words) {
-                if (wasSpace) {
-                    wordNum++;
-                    lookup.word.push(off);
+            if (!search.title) {
+                let wordNum = -1;
+                let off = 0;
+                let wasSpace = true;
+                for (let x of item.words) {
+                    if (wasSpace) {
+                        wordNum++;
+                        lookup.word.push(off);
+                    }
+                    wasSpace = (x == ' ');
+                    lookup.pos.push(wordNum);
+                    off++;
                 }
-                wasSpace = (x == ' ');
-                lookup.pos.push(wordNum);
-                off++;
+                lookup.word.push(off+1);
+
+                let last = 0;
+                start = [];
+                for (let cur of item.start) {
+                    last += cur;
+                    start.push(last);
+                }
+
+                speakerPop = {};
+                speaker = item.speaker.split('');
+                counts = {};
+                speaker.map(x => {
+                    counts[x] = counts[x] ? counts[x] + 1 : 1;
+                });
+                counts["@"] = 0;
+                counts = Object.entries(counts);
+                counts.sort((a, b) => {
+                    if (b < a) {
+                        return -1;
+                    }
+                    if (a > b) {
+                        return 1;
+                    }
+                    return 0;
+                });
+                counts.map(x => {
+                    if (x[0] == "@") {
+                        speakerPop[x[0]] = '';
+                    } else {
+                        speakerPop[x[0]] = ' ' + String.fromCharCode("A".charCodeAt(0) + Object.keys(speakerPop).length) + ": ";
+                    }
+                });
             }
-            lookup.word.push(off+1);
-
-            let last = 0;
-            start = [];
-            for (let cur of item.start) {
-                last += cur;
-                start.push(last);
-            }
-
-            speakerPop = {};
-            speaker = item.speaker.split('');
-            counts = {};
-            speaker.map(x => {
-                counts[x] = counts[x] ? counts[x] + 1 : 1;
-            });
-            counts["@"] = 0;
-            counts = Object.entries(counts);
-            counts.sort((a, b) => {
-                if (b < a) {
-                    return -1;
-                }
-                if (a > b) {
-                    return 1;
-                }
-                return 0;
-            });
-            counts.map(x => {
-                if (x[0] == "@") {
-                    speakerPop[x[0]] = '';
-                } else {
-                    speakerPop[x[0]] = ' ' + String.fromCharCode("A".charCodeAt(0) + Object.keys(speakerPop).length) + ": ";
-                }
-            });
-
         }
 
         if (!showHit(lookup.pos[hit], lookup.pos[hit+size])) {
@@ -369,14 +713,6 @@ function showHit(item, search, showAll, batch, itemID, paginator, countOnly) {
         }
         return true;
     });
-
-    if (hitCounts.length > 1) {
-        let i = 1;
-        for (let cur of hitCounts) {
-            cur.innerText = ` ${i} of ${hitCounts.length}`;
-            i++;
-        }
-    }
 
     return ret;
 }
@@ -394,7 +730,7 @@ function notify(desc) {
     document.getElementById("results").replaceChildren(searching);
 }
 
-async function searchFor(search, skip=0, countOnly=false) {
+async function searchFor(search, skip=0, countOnly=false, showLatest=false, showAll=false) {
     if (info === null) {
         info = await getData(0, 0, 100, "json");
         batches = await getData(...info.data);
@@ -419,55 +755,81 @@ async function searchFor(search, skip=0, countOnly=false) {
         regex: false,
         logic: false,
         title: false,
+        reverse: false,
+        groups: [],
         orig: search,
+        show_next: true,
     };
 
+    if (document.getElementById("start").value.length > 0) {
+        search.after = document.getElementById("start").value;
+    }
+
+    if (document.getElementById("end").value.length > 0) {
+        search.before = document.getElementById("end").value;
+    }
+
+    if (document.getElementById("search_type").value == "regex") {
+        search.regex = true;
+    } else if (document.getElementById("search_type").value == "logic") {
+        search.logic = true;
+    } else if (document.getElementById("search_type").value == "title") {
+        search.title = true;
+        document.getElementById("totalsCount").innerText = '';
+    }
+
+    if (document.getElementById("reverse").checked) {
+        search.reverse = true;
+    }
+
+    if (document.getElementById("target_group") !== null) {
+        if (document.getElementById("target_group").value != "") {
+            search.groups.push(document.getElementById("target_group").value);
+        }
+    }
+
     for (let word of searchTerms) {
-        let m = word.match(/^after:([^ ]+)( |$)/i);
-        if (m != null) {
-            search.after = m[1];
-            continue;
-        }
-        m = word.match(/^before:([^ ]+)( |$)/i);
-        if (m != null) {
-            search.before = m[1];
-            continue;
-        }
-        m = word.match(/^(?:regex|re):([^ ]+)( |$)/i);
-        if (m != null) {
-            search.terms.push(m[1]);
-            search.regex = true;
-            continue;
-        }
-        m = word.match(/^title:([^ ]+)( |$)/i);
-        if (m != null) {
-            search.terms.push(m[1]);
-            search.title = true;
-            continue;
-        }
-        m = word.match(/^logic:([^ ]+)( |$)/i);
-        if (m != null) {
-            search.terms.push(m[1]);
-            search.logic = true;
-            continue;
-        }
         search.terms.push(word);
     }
 
-    if (search.terms.join(' ') == 'list') {
-        search.title = true;
-        search.terms = [];
-        paginator.bail = 10000;
+    if (!(search.regex || search.logic || search.title)) {
+        if (document.getElementById('similar').checked) {
+            let [complex, simple] = await cacheLoad(['lemma', 0, 0]);
+            let fixed = [];
+            for (let term of search.terms) {
+                if (term in complex) {
+                    term = complex[term];
+                };
+                let temp = [escapeRe(term)];
+                if (term in simple) {
+                    temp = temp.concat(simple[term]);
+                }
+                fixed.push(temp);
+            }
+            search.terms = [fixed.map(x => `(${x.join('|')})`).join(' ')];
+            search.regex = true;
+        }
     }
 
-    if (search.terms.join(' ') == 'latest') {
+    if (showAll) {
+        document.getElementById("totalsCount").innerText = '';
         search.title = true;
         search.terms = [];
-        paginator.skip = Math.max(0, totalItems - 25);
-        paginator.bail = 10000;
-    }
-
-    if (search.logic) {
+        paginator.bail = 100000;
+    } else if (showLatest) {
+        document.getElementById("totalsCount").innerText = '';
+        search.title = true;
+        search.terms = [];
+        if (search.reverse) {
+            paginator.bail = 25;
+            search.show_next = false;
+        } else {
+            paginator.skip = Math.max(0, totalItems - 25);
+            paginator.bail = 10000;
+        }
+        search.after = null;
+        search.before = null;
+    } else if (search.logic) {
         let debugLogic = false;
         let nearAmount = 200;
         /* ########################################################################################################################################## */
@@ -523,7 +885,7 @@ async function searchFor(search, skip=0, countOnly=false) {
 
         let hitOrVal = x => {
             /* Just see if an item is a hit or a val */
-            return (x.oper == 'HIT') || (x.oper == 'VAL')
+            return (x.oper == 'HIT') || (x.oper == 'VAL');
         };
 
         let isTrue = (x, words) => {
@@ -733,18 +1095,28 @@ async function searchFor(search, skip=0, countOnly=false) {
         /* ########################################################################################################################################## */
     }
 
+    if (search.orig != pages['terms']) {
+        pages['terms'] = search.orig;
+        pages['pages'] = [];
+    }
+    document.getElementById('pagination').replaceChildren();
+
     let temp = [];
-    for (let batchInfo of batches) {
+    let batchesTemp = batches;
+    if (search.reverse) {
+        batchesTemp = [...batchesTemp].reverse();
+    }
+    for (let batchInfo of batchesTemp) {
         if (paginator.bail == 0) {
             break;
         }
-        let key = batchInfo.join('|');
-        if (!(key in batchData)) {
-            batchData[key] = await getData(...batchInfo);
-        }
-        let batch = batchData[key];
+        let batch = await cacheLoad(batchInfo);
         let itemID = -1;
-        for (let item of batch) {
+        let batchTemp = batch;
+        if (search.reverse) {
+            batchTemp = [...batchTemp].reverse();
+        }
+        for (let item of batchTemp) {
             itemID++;
             if (paginator.bail == 0) {
                 break;
@@ -764,6 +1136,64 @@ async function searchFor(search, skip=0, countOnly=false) {
             temp = temp.concat(showHit(item, search, false, batchInfo, itemID, paginator, countOnly));
         }
     }
+    if (search.show_next) {
+        if (paginator.bail == 0) {
+            let found = false;
+            for (let page of pages['pages']) {
+                if (skip == page['skip']) {
+                    found = true;
+                    if (page['name'] == "Next") {
+                        pages['pages'].pop();
+                        found = false;
+                    }
+                }
+            }
+            if (!found) {
+                pages['pages'].push({
+                    "name": (pages['pages'].length + 1) + "",
+                    "skip": skip,
+                });
+                pages['pages'].push({
+                    "name": "Next",
+                    "skip": paginator.pos,
+                });
+            }
+        } else {
+            if (pages['pages'].length > 0) {
+                if (pages['pages'][pages['pages'].length - 1]['name'] == "Next") {
+                    pages['pages'].pop();
+                }
+            }
+            let found = false;
+            for (let page of pages['pages']) {
+                if (skip == page['skip']) {
+                    found = true;
+                }
+            }
+            if (!found) {
+                pages['pages'].push({
+                    "name": (pages['pages'].length + 1) + "",
+                    "skip": skip,
+                })
+            }
+        }
+        if (pages['pages'].length > 0) {
+            for (let page of pages['pages']) {
+                let paginate = document.createElement('button');
+                if (page['skip'] == skip) {
+                    paginate.className = "page-btn active";
+                } else {
+                    paginate.className = "page-btn";
+                }
+                paginate.innerText = page['name'];
+                paginate.onclick = () => {
+                    window.scrollTo(0, 0);
+                    searchFor(search.orig, page['skip']).then();
+                };
+                document.getElementById('pagination').appendChild(paginate);
+            }
+        }
+    }
 
     if (countOnly) {
         document.getElementById("totalsCount").innerText = 
@@ -771,15 +1201,12 @@ async function searchFor(search, skip=0, countOnly=false) {
     } else {
         if (!search.title) {
             if (paginator.found == 0) {
-                let comment = document.createElement('span');
-                temp.push(comment);
+                let comment = document.getElementById("totalsCount");
                 comment.innerText = "(No matches found)";
             } else {
-                let comment = document.createElement('span');
-                temp.unshift(comment);
+                let comment = document.getElementById("totalsCount");
                 comment.innerText = `Found ${paginator.bail == 0 ? 'at least ' : ''}${commafy(paginator.found)} hits in ${commafy(paginator.foundTitles)} episodes`;
                 if (paginator.bail == 0) {
-                    comment.id = "totalsCount";
                     let keep = document.createElement("span");
                     keep.className = "clickable";
                     keep.innerText = ", produce complete count.";
@@ -796,7 +1223,6 @@ async function searchFor(search, skip=0, countOnly=false) {
     }
 }
 
-
 function commafy(val) {
     return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
@@ -809,37 +1235,70 @@ async function showCreation() {
     totalItems = info.items;
 }
 
-function cacheData(workers, startAt) {
-    if (info === null) {
-        getData(0, 0, 100, "json").then(newInfo => {
-            getData(...newInfo.data).then(newBatches => {
-                info = newInfo;
-                batches = newBatches;
-                for (let i = 0; i < workers; i++) {
-                    cacheData(workers, i);
-                }
-            });
-        });
-        return;
-    }
-
-    if (startAt < batches.length) {
-        let key = batches[startAt].join('|');
+async function cacheWorker(jobs) {
+    for (let cur of jobs) {
+        let key = cur.join('|');
         if (!(key in batchData)) {
-            getData(...batches[startAt]).then(data => {
-                batchData[key] = data;
-                cacheData(workers, startAt + workers);
-            });
+            let data = await getData(...cur);
+            batchData[key] = data;
         }
     }
 }
 
+function cacheData(workers) {
+    (async () => {
+        const newInfo = await getData(0, 0, 100, "json");
+        const newBatches = await getData(...newInfo.data);
+        info = newInfo;
+        batches = newBatches;
+        const jobs = Array.from({ length: workers }, () => []);
+        let curWorker = 0;
+        for (let i = 0; i < batches.length; i++) {
+            jobs[curWorker].push(batches[i]);
+            curWorker = (curWorker + 1) % workers;
+        }
+        jobs[curWorker].push(['lemma', 0, 0]);
+        curWorker = (curWorker + 1) % workers;
+        for (let cur of jobs) {
+            cacheWorker(cur);
+        }
+    })();
+}
+
 document.addEventListener("DOMContentLoaded", function(event) {
+    function enableSimilar() {
+        const box = document.getElementById('similar');
+        box.disabled = !(document.getElementById('search_type').value === 'raw');
+        if (box.disabled) {
+            box.checked = false;
+        }
+    }
+    document.getElementById('search_type').addEventListener('change', enableSimilar);
+    enableSimilar();
+
+    if (window.location.hash.substring(1, 5) == "rid=") {
+        let temp = document.getElementById("info");
+        if (temp != null) {
+            temp.src = temp.src.replace(".png", "-rid.png");
+        }
+    }
+
+    document.getElementById("show_all").addEventListener('click', e => {
+        e.preventDefault();
+        searchFor("", 0, false, false, true).then();
+    });
+
+    document.getElementById("show_latest").addEventListener('click', e => {
+        e.preventDefault();
+        searchFor("", 0, false, true, false).then();
+    });
+
     let info = window.location.hash.substring(1);
     info = info.split(",");
     if (info.length == 4 || info.length == 5) {
-        document.getElementById("search_input").innerHTML = '';
-        document.getElementById("footer").innerHTML = '';
+        document.getElementById("search-card").style.display = 'none';
+        document.getElementById("results-header").style.display = 'none';
+        document.getElementById("footer").style.display = 'none';
         showTranscript(parseInt(info[0]), parseInt(info[1]), parseInt(info[2]), parseInt(info[3])).then(() => {
             if (info.length == 5) {
                 let at = parseInt(info[4]);
@@ -854,46 +1313,103 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } else {
         showCreation().then(() => {
             document.getElementById("search").focus();
-            cacheData(4, 0);
+            cacheData(4);
         });
     }
-});
 
-function handleKey(e) {
-    if (e.keyCode === 13) {
+    document.querySelectorAll('.page-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelector('.page-btn.active').classList.remove('active');
+            button.classList.add('active');
+        });
+    });
+
+    document.querySelector('form').addEventListener('submit', (e) => {
         e.preventDefault();
-        let val = document.getElementById('search').value.trim();
+        let val = document.getElementById("search").value;
         if (val.length > 0) {
+            document.getElementById("search").blur();
             searchFor(val).then().catch(e => {
                 notify("ERROR: " + e);
             });
         }
-    }
-}
+    });
+});
 </script>
 </head>
 <body>
-<span id="search_input">
-Search term: <input id="search" type="text" size=50 autocomplete="off" autocorrect="off" onkeyup="handleKey(event);"><br>
-<span style="font-size: 80%;">
-Usage:<br>
-<div style="margin-left: 1em;">
-"search term" = Search for "seach term"<br>
-"list" = Show a list of all items<br>
-"latest" = Show a list of most recent items<br>
-"... after:xxx" = Show items that are published after xxx<br>
-"... before:xxx" = Show items that are published before xxx<br>
-"regex:xxx" = Search using regular expressions<br>
-"logic:xxx" = Search using logic operators: AND, OR, NOT, NEAR, WHOLE, ()<br>
-"title:xxx" = Search in the titles<br>
+<div class="container">
+    <div class="page-title" id="page-title">
+        <div class="title-text">
+            <p><!-- search_header --></p>
+        </div>
+    </div>
+    <div class="search-card" id="search-card">
+        <form class="search-form">
+            <div class="search-bar">
+                <select aria-label="Search style" id="search_type" class="search-style">
+                    <option value="raw">Use this exact string:</option>
+                    <option value="regex">Use regular expressions:</option>
+                    <option value="logic">Use logic ops (AND, OR, NOT, NEAR, WHOLE):</option>
+                    <option value="title">Use titles only:</option>
+                </select>
+                <input id="search" type="text" placeholder="Enter your search query..." aria-label="Search query" autocomplete="off" spellcheck="false" autocorrect="off">
+                <button type="submit">Search</button>
+            </div>
+            
+            <div class="search-options">
+                <div class="option-group">
+                    <label class="option-label">Time Range</label>
+                    <div class="time-inputs">
+                        <div class="time-input">
+                            <input id="start" type="text" placeholder="Start date" aria-label="Start date">
+                        </div>
+                        <div class="time-input">
+                            <input id="end" type="text" placeholder="End date" aria-label="End date">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- search_terms -->
+                
+                <div class="option-group">
+                    <label class="option-label">Options</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="reverse" aria-label="Results start with newest first">
+                        <label for="reverse">Results start with newest first</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="similar" aria-label="Include similar words">
+                        <label for="similar">Include similar words</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-links">
+                <a href="#" class="quick-link" id="show_all">Show all episodes</a>
+                <a href="#" class="quick-link" id="show_latest">Show latest episodes</a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="results-container">
+        <div class="results-header" id="results-header">
+            <div class="result-stats" id="totalsCount">...</div>
+        </div>
+        
+        <div class="results-list" id="results"></div>
+
+        <div class="pagination" id="pagination"></div>
+        
+        <div class="created" id="footer">
+            Created: <span id="created">(loading)</span>
+        </div>
+        <div class="created">
+            This search page is created by a third party, not affiliated to the creators of the podcast.
+        </div>
+        <!-- example_link -->
+    </div>
 </div>
-</span>
-<br>
-</span>
-<span id="results">...</span>
-<span class="created" id="footer"><hr>
-Created: <span id="created">(loading)</span>
-<!-- example_link -->
-</span>
+    
 </body>
 </html>

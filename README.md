@@ -15,3 +15,11 @@ Supported engines:
 * [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) -- Sample output: [Tiny](https://seligman.github.io/podcast_to_text/Example-Results-Whisper_CPP-Tiny.html), [Large](https://seligman.github.io/podcast_to_text/Example-Results-Whisper_CPP-Large.html) models
 * [Whisper-Timestamped](https://github.com/linto-ai/whisper-timestamped) -- Sample output: [Medium](https://seligman.github.io/podcast_to_text/Example-Results-WhisperTimestamped-Medium.html) model.
 * [WhisperX](https://github.com/m-bain/whisperX) -- Sample output: [Medium](https://seligman.github.io/podcast_to_text/Example-Results-WhisperX-Medium.html) model.
+
+## Search:
+
+Please see [search_instructions.md] for details on how to use a couple of helper scripts in this repo to download a podcast, transcribe all audio files in it, and create a search page to search the transcripts of the podcast.
+
+## Finally:
+
+If you find this project useful, consider [buying me a cup coffee](https://coff.ee/seligman).  Thanks!

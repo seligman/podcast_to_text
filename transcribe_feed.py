@@ -99,7 +99,12 @@ def pod_open(url, show_progress=False):
     resp = opener.open(req)
     return resp.read()
 
-def process_feed(rss_url, target_dir):
+def process_feed(rss_url, target_dir, settings_file=None):
+    global DEFAULT_SETTINGS
+    if settings_file is not None:
+        with open(settings_file, "r") as f:
+            DEFAULT_SETTINGS = json.load(f)
+
     if not os.path.isdir(target_dir):
         raise Exception(f"Unable to find directory {target_dir}")
 
@@ -142,11 +147,11 @@ def process_feed(rss_url, target_dir):
 
 def main():
     # Wrapper to parse command line args and call the helper
-    if len(sys.argv) == 3:
+    if len(sys.argv) in {3, 4}:
         process_feed(*sys.argv[1:])
     else:
         print("Usage:")
-        print(f"  {__file__} (RSS URL) (Target Dir)")
+        print(f"  {__file__} <RSS URL> <Target Dir> (<settings file>)")
         exit(1)
 
 if __name__ == "__main__":

@@ -73,6 +73,11 @@ class DumpData:
             self.f = None
 
 def main():
+    if len(sys.argv) != 2:
+        print("Usage:")
+        print("  <target folder> = The target folder that has the MP3 files and transcript data")
+        exit(1)
+
     target = sys.argv[1]
 
     # Load the cache data, this will tell us where to find all of the
@@ -168,11 +173,32 @@ def main():
         with open(fn, "wb") as f:
             f.write(data)
 
-    # And write out the page itself that does the work
-    for fn in ["search.html", "spyglass.png"]:
-        with open(os.path.join("search", fn), "rb") as f_src:
-            with open(os.path.join(target, fn), "wb") as f_dest:
-                f_dest.write(f_src.read())
+    # And write out the page itself, along with some support data files
+    search_files = [
+        ("search.html", "search"),
+        ("spyglass.png", "binary"),
+        ("lemma.dat", "binary"),
+    ]
+    for fn, file_type in search_files:
+        with open(os.path.join("search", fn), "rb") as f:
+            data = f.read()
+        
+        if file_type == "binary":
+            pass # Nothing to do here
+        elif file_type == "search":
+            # The search page supports a few simple template points, just hard
+            # code them here in this example
+            search_page = data.decode("utf-8")
+            search_page = search_page.replace("<!-- example_link -->", "")
+            search_page = search_page.replace("<!-- search_title -->", "Search page")
+            search_page = search_page.replace("<!-- search_header -->", "")
+            search_page = search_page.replace("<!-- search_terms -->", "")
+            data = search_page.encode("utf-8")
+        else:
+            raise Exception("Unknown file type!")
+
+        with open(os.path.join(target, fn), "wb") as f:
+            f.write(data)
 
     print("All done!")
 
