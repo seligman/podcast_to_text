@@ -4,22 +4,76 @@
 
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, HTTPServer
-import argparse
-import os
-import sys
-import io
-import html
-import urllib.parse
-import urllib.request
+import argparse, json, html, io, os, sys, urllib.parse
 if sys.version_info >= (3, 11): from datetime import UTC
 else: import datetime as datetime_fix; UTC=datetime_fix.timezone.utc
 
+ROOT_TEMPLATE = '''<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width"/>
+<meta name="viewport" content="initial-scale=1.0"/>
+<meta name="theme-color" media="(prefers-color-scheme: dark)"  content="light-dark(#ccc, #333)">
+<title>Pages</title>
+<style>
+:root{
+    color-scheme: light dark;
+}
+html,
+body {
+    background-color: light-dark(#ccc, #333);
+    color: light-dark(#333, #ccc);
+    font-family: "Roboto", sans-serif;
+    font-size: 12pt;
+}
+a {
+    color: light-dark(#003, #ccf);
+    text-decoration: none;
+    padding: 0.1em;
+}
+ul {
+    list-style-type: none;
+}
+li {
+    margin-bottom: 0.5em;
+}
+a:hover {
+    color: light-dark(#003, #ccf);
+    text-decoration: underline;
+}
+</style>
+</head>
+<body>
+<!-- HTML -->
+</body>
+</html>
+'''
+
 def get_root_page():
-    ret = "<!DOCTYPE html><html><head><title>Pages</title></head><body>"
-    for cur in os.listdir("."):
-        if os.path.isfile(cur) and cur.endswith(".html"):
-            ret += f'<a href="{urllib.parse.quote_plus(cur)}">{html.escape(cur)}</a><br>'
+    ret = "<ul>"
+
+    if os.path.isfile("cache.json"):
+        with open("cache.json", "r") as f:
+            cache = json.load(f)
+    else:
+        cache = {}
+    
+    titles = {}
+    for cur in cache.values():
+        titles[f"{cur['filename']}.html"] = f"{cur['pub_date'][:10]}: {cur['title']}"
+
+    if os.path.isfile("search.html"):
+        ret += f'<li><a href="search.html">Main Search Page</a>'
+
+    for cur in sorted(os.listdir(".")):
+        if cur != "search.html":
+            if os.path.isfile(cur) and cur.endswith(".html"):
+                ret += f'<li><a href="{urllib.parse.quote_plus(cur)}">{html.escape(titles.get(cur, cur))}</a>'
+
+    ret = ROOT_TEMPLATE.replace('<!-- HTML -->', ret)
+
     return ret.encode("utf-8")
+
 class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
     def log_request(self, *args, **kw):
         print(f"{datetime.now(UTC).strftime('%d %H:%M:%S')}: {self.command} '{self.path}' [{self.headers.get('Range', '-')}]")
@@ -42,7 +96,7 @@ class RangeHTTPRequestHandler(SimpleHTTPRequestHandler):
                 return self.send_error(404, self.responses.get(404)[0])
             f = open(path, 'rb')
             fs = os.fstat(f.fileno())
-            size = fs[6]
+            size = fs.st_size
 
         start, end = 0, size-1
         if 'Range' in self.headers:
