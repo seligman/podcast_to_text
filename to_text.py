@@ -95,13 +95,26 @@ def creat_webpage_internal(settings_file, save_data=False):
     engine_settings = engine.get_settings()
     data_fn = settings_file + ".gz"
 
-    if os.path.isfile(data_fn):
-        with gzip.open(data_fn, "rb") as f:
-            data = f.read()
-    else:
+    data = None
+
+    if data is None:
+        if os.path.isfile(data_fn):
+            with gzip.open(data_fn, "rb") as f:
+                data = json.load(f)
+
+    if data is None:
+        if "target_fn" in settings:
+            dest = settings["target_fn"]
+        else:
+            dest = settings['source_mp3']
+        if os.path.isfile(dest + ".json.gz"):
+            with gzip.open(dest + ".json.gz", "rb") as f:
+                data = json.load(f)
+
+    if data is None:
         if 'limit_seconds' in engine_settings or 'limit_bytes' in engine_settings:
             temp = []
-            print("Creating seperate chunks...")
+            print("Creating separate chunks...")
             chunks = mp3_splitter.chunk_mp3(
                 settings["source_mp3"], 
                 duration_in_seconds=engine_settings.get('limit_seconds'),
@@ -121,17 +134,17 @@ def creat_webpage_internal(settings_file, save_data=False):
         with gzip.open(data_fn, "wb") as f:
             f.write(data)
 
-    if data.startswith(b'CHUNKED'):
-        # For chunked data, parse each chunk in turn and offset the resulting data
-        temp = pickle.loads(data[7:])
-        data = []
-        for cur in temp:
-            chunk = engine.parse_data(cur['data'])
-            for word, start, end, speaker in enumerate_words(chunk):
-                data.append((word, start + cur['offset'], end + cur['offset'], speaker))
-    else:
-        # Non-chunked data, just read and parse it as is
-        data = engine.parse_data(data)
+        if data.startswith(b'CHUNKED'):
+            # For chunked data, parse each chunk in turn and offset the resulting data
+            temp = pickle.loads(data[7:])
+            data = []
+            for cur in temp:
+                chunk = engine.parse_data(cur['data'])
+                for word, start, end, speaker in enumerate_words(chunk):
+                    data.append((word, start + cur['offset'], end + cur['offset'], speaker))
+        else:
+            # Non-chunked data, just read and parse it as is
+            data = engine.parse_data(data)
 
     if "target_fn" in settings:
         dest = settings["target_fn"]

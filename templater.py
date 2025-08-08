@@ -199,6 +199,8 @@ def fill_out(words, mp3_fn):
         '"[[EXPECTED_DUR]]"': json.dumps(duration),
         "[[META_MP3_NAME]]": html.escape(fn),
         "[[MP3_NAME]]": html.escape(fn),
+        "<!-- EXTRA_WIDGETS -->": "",
+        '"[[SEGMENTS_DATA]]"': '" "',
     }
 
     all_tags = "(?P<tag>" + "|".join(re.escape(k) for k in to_replace) + ")"
