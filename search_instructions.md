@@ -36,6 +36,10 @@ Optionally, you can create a .json file with the same format described as the `D
 
 Note that this process will take some time to run, generally a couple of minutes per episode, more if running on a CPU.  You can create a file called `abort.txt` to have the process cleanly stop during a run.  Also note that the WhisperX process will generate several warnings about version compatibility issues.  This is expected.
 
+When run to completion, this will download the MP3 files, and create a metadata file with the transcript and a webpage player for each episode.  The webpages can be run with almost any web server, or just run from the local filesystem:
+
+[ ![Player](search/preview_player_tn.png) ](search/preview_player.png)
+
 ## Creating a search database
 
 You can run the following to create a search database:
@@ -57,6 +61,8 @@ python "[path to this repo]/examples/example_server.py"
 
 Where `[path]` is again the local path that was used to store data, and `[path to this repo]` is the path to this repo on your local machine.  When run, visit `http://127.0.0.1:8000/search.html` in your local browser to view the search page:
 
-![The search page](search/web_server.png)
+[ ![Search Results](search/preview_search_tn.png) ](search/preview_search.png)
+
+[ ![Search Hit](search/preview_result_tn.png) ](search/preview_result.png)
 
 Once the data is loaded, all searching will occur in your browser itself.
