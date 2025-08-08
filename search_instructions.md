@@ -52,7 +52,7 @@ Where `[path]` is the local path that was used in the previous step.
 
 ## Running the example server
 
-While the pages that are output can be served up with almost any server, they will not work from a file system, since most modern browsers block Javascript from loading local files, and they also won't work with Python's built in "http.server" since that does not support byte-range requests.  This project includes a simple example server that will work:
+While the `search.html` page that's created can be served up with almost almost any server, it will not work from a file system, since most modern browsers block Javascript from loading local files.  What's more, it also won't work with Python's built in "http.server" since that does not support byte-range requests.  This project includes a simple example server written in Python that will work:
 
 ```bash
 cd [path]
