@@ -114,6 +114,10 @@ def process_feed(rss_url, target_dir, settings_file=None):
     feed = pod_open(rss_url)
 
     for cur in parse_rss(feed):
+        if os.path.isfile('abort.txt'):
+            print("Abort file detected!")
+            exit(0)
+
         if cur['id'] not in cache:
             cur['filename'] = clean(cur['pub_date'][:10] + "-" + cur['title']) + ".mp3"
             cache[cur['id']] = cur
