@@ -113,24 +113,45 @@ def process_feed(rss_url, target_dir, settings_file=None):
     print("Loading feed...")
     feed = pod_open(rss_url)
 
-    for cur in parse_rss(feed):
+    todo = list(parse_rss(feed))
+    stats = {
+        "downloaded": 0,
+        "transcribed": 0,
+        "already_done": 0,
+    }
+    for i, cur in enumerate(todo):
         if os.path.isfile('abort.txt'):
             print("Abort file detected!")
-            exit(0)
+            break
 
         if cur['id'] not in cache:
             cur['filename'] = clean(cur['pub_date'][:10] + "-" + cur['title']) + ".mp3"
             cache[cur['id']] = cur
             save_cache(target_dir, cache)
 
+        show_header = True
+        def header():
+            nonlocal show_header
+            if show_header:
+                show_header = False
+                print("")
+                temp = f" Working on item {i+1:,} of {len(todo):,} "
+                temp = "#" * 5 + temp
+                temp += "#" * (80 - len(temp))
+                print(temp)
+
         cur = cache[cur['id']]
         if not os.path.isfile(os.path.join(target_dir, cur['filename'])):
+            header()
+            stats['downloaded'] += 1
             print(f"Downloading '{cur['title']}' to '{cur['filename']}'...")
             mp3 = pod_open(cur['enclosure'])
             with open(os.path.join(target_dir, cur['filename']), "wb") as f:
                 f.write(mp3)
 
         if not os.path.isfile(os.path.join(target_dir, cur['filename']) + ".html"):
+            header()
+            stats['transcribed'] += 1
             print(f"Transcribing '{cur['title']}'...")
             temp_fn = "_temp_settings.json"
 
@@ -148,6 +169,12 @@ def process_feed(rss_url, target_dir, settings_file=None):
             for fn in [temp_fn, temp_fn + ".gz"]:
                 if os.path.isfile(fn):
                     os.unlink(fn)
+
+        if show_header:
+            stats['already_done'] += 1
+    
+    print("")
+    print(f"Done. Downloaded {stats['downloaded']:,}, transcribed {stats['transcribed']:,}, and {stats['already_done']:,} already done.")
 
 def main():
     # Wrapper to parse command line args and call the helper
