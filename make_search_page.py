@@ -177,7 +177,7 @@ def main():
     search_files = [
         ("search.html", "search"),
         ("spyglass.png", "binary"),
-        ("lemma.dat", "binary"),
+        ("search_data_lemma.dat", "binary"),
     ]
     for fn, file_type in search_files:
         with open(os.path.join("search", fn), "rb") as f:
