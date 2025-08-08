@@ -43,4 +43,4 @@ Where `<path>` is again the local path that was used to store data, and `<path t
 
 ![The search page](search/web_server.png)
 
-Once the data is loaded, all searching will occur in your brower itself.
+Once the data is loaded, all searching will occur in your browser itself.
