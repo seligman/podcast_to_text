@@ -17,7 +17,7 @@ import engines.whisper_cpp
 import engines.whisper_timestamped
 import engines.whisperx
 def setup_engines():
-    # Validate the engines implemenet the expected functions
+    # Validate the engines implement the expected functions
     to_setup = [
         engines.openai,
         engines.transcribe,
@@ -52,7 +52,7 @@ def show_engines():
         for setting, desc in value.get_opts():
             print(f'  "{setting}": "{desc}",')
 
-@opt("Interactivately reate a settings file example")
+@opt("Interactively create a settings file example")
 def create_settings():
     fn = input("Please enter the filename to write the settings to: ")
     settings = {}
@@ -81,13 +81,13 @@ def enumerate_words(data):
 
 @opt("Transcribe an MP3 file and create a webpage, also save data")
 def create_webpage_and_data(settings_file):
-    creat_webpage_internal(settings_file, True)
+    create_webpage_internal(settings_file, True)
 
 @opt("Transcribe an MP3 file and create a webpage")
 def create_webpage(settings_file):
-    creat_webpage_internal(settings_file)
+    create_webpage_internal(settings_file)
 
-def creat_webpage_internal(settings_file, save_data=False):
+def create_webpage_internal(settings_file, save_data=False):
     with open(settings_file, "rt", encoding="utf-8") as f:
         settings = json.load(f)
 

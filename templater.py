@@ -192,14 +192,24 @@ def fill_out(words, mp3_fn):
     }
 
     to_replace = {
+        # The HTML title
         "[[TITLE]]": html.escape(fn.replace(".mp3", "").replace("_", " ")),
+        # The encoded and compressed metadata, include words, timings, and speaker information
         '"[[WORDS_VAR]]"': encode_words(simple),
+        # The title, used for creating Media Metadata (for use on mobile devices)
         "[[TITLE_META]]": base64.b64encode(json.dumps(details, separators=(",", ":")).encode("utf-8")).decode("utf-8"),
+        # An ID used to store local information about the playback position
         "[[WORD_ID]]": sha256(fn.encode("utf-8")).hexdigest()[:10],
+        # The total length of the MP3 file, used to render the progress bar
         '"[[EXPECTED_DUR]]"': json.dumps(duration),
+        # The name of the MP3 file being shown, currently unused
         "[[META_MP3_NAME]]": html.escape(fn),
+        # The name of the MP3 file for the player to load
         "[[MP3_NAME]]": html.escape(fn),
+        # A chance for the template to include extra HTML, currently unused
         "<!-- EXTRA_WIDGETS -->": "",
+        # The render of the page supports showing segments.  This could be generated from MP3 chapters and/or by use of 
+        # a LLM to find the segments, but as of now, this is unused here.
         '"[[SEGMENTS_DATA]]"': '" "',
     }
 
@@ -214,12 +224,12 @@ def encode_words(value):
     # Compress and encode the simple version of the word data to a compressed
     # format used by the webpage
     
-    # Turn the list of words to a single string seperated by a pipe.
+    # Turn the list of words to a single string separated by a pipe.
     value['word'] = "|".join(value['word'])
     # The list of paragraph starts is just a "." for a paragraph start,
     # and " " otherwise, so turn it into a long string
     value['para'] = "".join(value['para'])
-    # Speakers are A-Z, or " " for no speaker, so again, a simlpe string
+    # Speakers are A-Z, or " " for no speaker, so again, a simple string
     value['speaker'] = "".join(value['speaker'])
     # Place the rest in a compressed json dump
     value = json.dumps(value, separators=(",", ":"))

@@ -166,7 +166,7 @@ def main():
     output.write(final, compress=False)
     output.close()
 
-    # Finaly dump out all of the data files
+    # Finally dump out all of the data files
     for i in sorted(output.data):
         data = output.data[i].getvalue()
         fn = os.path.join(target, f"search_data_{i:02d}.dat")
