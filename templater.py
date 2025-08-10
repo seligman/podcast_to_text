@@ -69,7 +69,7 @@ class IsParagraph:
 
 def safe_json_dumps(obj, separators=(",", ":"), **kwargs):
     json_str = json.dumps(obj, separators=separators, **kwargs)
-    return json_str.replace('<', '\\x3C')
+    return json_str.replace('<', '\\u003c')
 
 def enumerate_words(data):
     for frame in data:
