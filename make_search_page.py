@@ -39,7 +39,7 @@ class DumpData:
 
     def write(self, value, compress=True, next_segment=False):
         if not isinstance(value, bytes):
-            value = json.dumps(value, separators=(',', ':'))
+            value = safe_json_dumps(value)
             value = value.encode("utf-8")
         if compress:
             value = gzip.compress(value, mtime=0)
@@ -71,6 +71,10 @@ class DumpData:
     def close(self):
         if self.f is not None:
             self.f = None
+
+def safe_json_dumps(obj, separators=(",", ":"), **kwargs):
+    json_str = json.dumps(obj, separators=separators, **kwargs)
+    return json_str.replace('<', '\\x3C')
 
 def main():
     if len(sys.argv) != 2:
@@ -121,7 +125,7 @@ def main():
             })
         
         # The size is a "best effort" number to let us know when to split output files
-        batches[-1]['size'] += len(json.dumps(ret))
+        batches[-1]['size'] += len(safe_json_dumps(ret))
         batches[-1]['items'].append(ret)
 
     # Create and initialize a helper to store data
@@ -131,7 +135,7 @@ def main():
 
     for batch in batches:
         # Compress each batch in turn
-        value = json.dumps(batch['items'], separators=(',', ':'))
+        value = safe_json_dumps(batch['items'])
         value = value.encode("utf-8")
         value = gzip.compress(value, mtime=0)
         # We toss the data information
@@ -155,7 +159,7 @@ def main():
         'before': 15, 
         'after': 100,
     }
-    final = json.dumps(final, separators=(',', ':'))
+    final = safe_json_dumps(final)
     final = final.encode("utf-8")
     if len(final) > header_len:
         # This shouldn't happen, but if it does, it means the "final" dict is too big

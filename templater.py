@@ -67,6 +67,10 @@ class IsParagraph:
         self.last_end = max(start, end)
         self.last_sentence = (len(word) > 0 and word[-1] in "\\),:;.?!'\"")
 
+def safe_json_dumps(obj, separators=(",", ":"), **kwargs):
+    json_str = json.dumps(obj, separators=separators, **kwargs)
+    return json_str.replace('<', '\\x3C')
+
 def enumerate_words(data):
     for frame in data:
         if isinstance(frame, dict):
@@ -197,11 +201,11 @@ def fill_out(words, mp3_fn):
         # The encoded and compressed metadata, include words, timings, and speaker information
         '"[[WORDS_VAR]]"': encode_words(simple),
         # The title, used for creating Media Metadata (for use on mobile devices)
-        "[[TITLE_META]]": base64.b64encode(json.dumps(details, separators=(",", ":")).encode("utf-8")).decode("utf-8"),
+        "[[TITLE_META]]": base64.b64encode(safe_json_dumps(details).encode("utf-8")).decode("utf-8"),
         # An ID used to store local information about the playback position
         "[[WORD_ID]]": sha256(fn.encode("utf-8")).hexdigest()[:10],
         # The total length of the MP3 file, used to render the progress bar
-        '"[[EXPECTED_DUR]]"': json.dumps(duration),
+        '"[[EXPECTED_DUR]]"': safe_json_dumps(duration),
         # The name of the MP3 file being shown, currently unused
         "[[META_MP3_NAME]]": html.escape(fn),
         # The name of the MP3 file for the player to load
@@ -232,13 +236,13 @@ def encode_words(value):
     # Speakers are A-Z, or " " for no speaker, so again, a simple string
     value['speaker'] = "".join(value['speaker'])
     # Place the rest in a compressed json dump
-    value = json.dumps(value, separators=(",", ":"))
+    value = safe_json_dumps(value)
     value = value.encode("utf-8")
     value = gzip.compress(value)
     value = base64.b64encode(value)
     value = value.decode("utf-8")
     # One final pass through json just to ensure the string is javascript safe
-    value = json.dumps(value)
+    value = safe_json_dumps(value)
 
     return value
 
