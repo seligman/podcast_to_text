@@ -96,7 +96,7 @@ def main():
     items.sort(key=lambda x: x['pub_date'])
 
     for value in items:
-        source_fn = os.path.join(target, value['filename'] + ".json.gz")
+        source_fn = os.path.join(target, "media", value['filename'] + ".json.gz")
         if not os.path.isfile(source_fn):
             continue
 

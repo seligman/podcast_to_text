@@ -23,16 +23,29 @@ It's also possible to run these directions in Docker, though care must be taken 
 Once setup, you can run 
 
 ```bash
-python transcribe_feed.py [url] [path]
+python transcribe_feed.py [path]
 ```
 
-Where `[url]` is a URL of an RSS feed to a podcast, and `[path]` is the local path to store MP3 files, along with the transcription data when it's created.  
+Where `[path]` is the path to store the MP3 files and metadata.
 
-This will download each item, transcribe the MP3, and create a `.json.gz` for each file, then create a `.html` player for each item with the transcription data, and also create a `cache.json` file with some metadata about the feed and items downloaded.
+Optionally, you can create a .json file with the same format described as the `DEFAULT_SETTINGS` variable in `transcribe_feed.py` and pick a different transcription engine and/or model to process the audio files.
+
+The first time transcribe feed is run, it will prompt for some information:
+
+```text
+$ python transcribe_feed.py ~/pod_example
+Enter podcast RSS feed URL: https://www.nasa.gov/feeds/podcasts/houston-we-have-a-podcast
+Enter filename of settings file for Engine override (blank for none):
+URL: https://www.nasa.gov/feeds/podcasts/houston-we-have-a-podcast
+Engine: (Use default)
+Does this look ok? [y/(n)] y
+```
+
+This will store these settings in a `settings.json` file for future runs.
+
+From there, it will download all MP3 files from the podcast, and then start transcribing the podcast, creating a `.json.gz` file for each episode, along with a `.html` player for the episode.  It stores the data about each episode and some other metadata in a file called `cache.json`.
 
 The command is safe to run again, it will only download MP3 files and update the metadata file for items that have not been previously processed.
-
-Optionally, you can create a .json file with the same format described as the `DEFAULT_SETTINGS` variable in `transcribe_feed.py` and pick a different transcription engine and/or model to process the audio files.  If you do, pass it as a third parameter to `transcribe_feed.py`
 
 Note that this process will take some time to run, generally a couple of minutes per episode, more if running on a CPU.  You can create a file called `abort.txt` to have the process cleanly stop during a run.  Also note that the WhisperX process will generate several warnings about version compatibility issues.  This is expected.
 

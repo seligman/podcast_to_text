@@ -65,10 +65,10 @@ def get_root_page():
     if os.path.isfile("search.html"):
         ret += f'<li><a href="search.html">Main Search Page</a>'
 
-    for cur in sorted(os.listdir(".")):
+    for cur in sorted(os.listdir("media")):
         if cur != "search.html":
-            if os.path.isfile(cur) and cur.endswith(".html"):
-                ret += f'<li><a href="{urllib.parse.quote_plus(cur)}">{html.escape(titles.get(cur, cur))}</a>'
+            if os.path.isfile(os.path.join("media", cur)) and cur.endswith(".html"):
+                ret += f'<li><a href="media/{urllib.parse.quote_plus(cur)}">{html.escape(titles.get(cur, cur))}</a>'
 
     ret = ROOT_TEMPLATE.replace('<!-- HTML -->', ret)
 

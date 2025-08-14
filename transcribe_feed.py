@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from urllib.request import Request, HTTPRedirectHandler, build_opener
-import email.utils, io, json, os, re, subprocess, sys
+import email.utils, io, json, os, re, subprocess, sys, time
 import xml.etree.ElementTree as ET
 
 # Use WhisperX's Medium model for this example
@@ -97,28 +97,51 @@ def pod_open(url, show_progress=False):
     opener = build_opener(HTTPRedirectHandler)
     req = Request(url, headers={"User-Agent": "Podcast Grabber"})
     resp = opener.open(req)
-    return resp.read()
 
-def process_feed(rss_url, target_dir, settings_file=None):
+    # Download with a simple progress
+    next_at = time.time() + 1.0
+    last_msg = ""
+    ret = b''
+    total = int(resp.headers.get("content-length", '0'))
+    while True:
+        temp = resp.read(1048576)
+        if len(temp) == 0:
+            break
+        ret += temp
+        if time.time() >= next_at:
+            if total > len(ret):
+                msg = f"Downloaded {len(ret) // 1048576}mb, {len(ret) / total * 100:.2f}%..."
+            else:
+                msg = f"Downloaded {len(ret) // 1048576}mb..."
+            print("\r" + " " * len(last_msg) + "\r" + msg, end="", flush=True)
+            last_msg = msg
+            next_at += 1.0
+    if len(last_msg):
+        print("\r" + " " * len(last_msg) + "\r", end="", flush=True)
+
+    return ret
+
+def process_feed(target_dir, settings):
     global DEFAULT_SETTINGS
-    if settings_file is not None:
-        with open(settings_file, "r") as f:
+    if settings['engine'] is not None:
+        with open(settings['engine'], "r") as f:
             DEFAULT_SETTINGS = json.load(f)
-
-    if not os.path.isdir(target_dir):
-        raise Exception(f"Unable to find directory {target_dir}")
 
     cache = load_cache(target_dir)
 
     print("Loading feed...")
-    feed = pod_open(rss_url)
+    feed = pod_open(settings['podcast'])
 
-    todo = list(parse_rss(feed))
+    if not os.path.isdir(os.path.join(target_dir, "media")):
+        os.mkdir(os.path.join(target_dir, "media"))
+
     stats = {
         "downloaded": 0,
         "transcribed": 0,
         "already_done": 0,
     }
+
+    todo = list(parse_rss(feed))
     for i, cur in enumerate(todo):
         if os.path.isfile('abort.txt'):
             print("Abort file detected!")
@@ -129,60 +152,101 @@ def process_feed(rss_url, target_dir, settings_file=None):
             cache[cur['id']] = cur
             save_cache(target_dir, cache)
 
-        show_header = True
-        def header():
-            nonlocal show_header
-            if show_header:
-                show_header = False
-                print("")
-                temp = f" Working on item {i+1:,} of {len(todo):,} "
-                temp = "#" * 5 + temp
-                temp += "#" * (80 - len(temp))
-                print(temp)
-
         cur = cache[cur['id']]
-        if not os.path.isfile(os.path.join(target_dir, cur['filename'])):
-            header()
-            stats['downloaded'] += 1
-            print(f"Downloading '{cur['title']}' to '{cur['filename']}'...")
+        if not os.path.isfile(os.path.join(target_dir, "media", cur['filename'])):
+            print(f"Downloading {i+1:,} of {len(todo):,}")
             mp3 = pod_open(cur['enclosure'])
-            with open(os.path.join(target_dir, cur['filename']), "wb") as f:
+            with open(os.path.join(target_dir, "media", cur['filename']), "wb") as f:
                 f.write(mp3)
+            stats['downloaded'] += 1
 
-        if not os.path.isfile(os.path.join(target_dir, cur['filename']) + ".html"):
-            header()
-            stats['transcribed'] += 1
-            print(f"Transcribing '{cur['title']}'...")
-            temp_fn = "_temp_settings.json"
+    if stats['downloaded'] == 0:
+        print("Nothing new to download")
 
-            for fn in [temp_fn, temp_fn + ".gz"]:
-                if os.path.isfile(fn):
-                    os.unlink(fn)
-
-            with open(temp_fn, "wt") as f:
-                temp = DEFAULT_SETTINGS.copy()
-                temp['source_mp3'] = os.path.join(target_dir, cur['filename'])
-                json.dump(temp, f)
-
-            subprocess.check_call(['python3', 'to_text.py', 'create_webpage_and_data', temp_fn])
-
-            for fn in [temp_fn, temp_fn + ".gz"]:
-                if os.path.isfile(fn):
-                    os.unlink(fn)
-
-        if show_header:
+    todo = []
+    for cur in cache.values():
+        web_page = os.path.join(target_dir, "media", cur['filename'] + ".html")
+        meta_file = os.path.join(target_dir, "media", cur['filename'] + ".json.gz")
+        if not os.path.isfile(meta_file) or not os.path.isfile(web_page):
+            todo.append(cur)
+        else:
             stats['already_done'] += 1
     
+    for i, cur in enumerate(todo):
+        if os.path.isfile('abort.txt'):
+            print("Abort file detected!")
+            break
+
+        web_page = os.path.join(target_dir, "media", cur['filename'] + ".html")
+        meta_file = os.path.join(target_dir, "media", cur['filename'] + ".json.gz")
+
+        temp_fn = "_temp_settings.json"
+        for fn in [temp_fn, temp_fn + ".gz"]:
+            if os.path.isfile(fn):
+                os.unlink(fn)
+
+        with open(temp_fn, "wt") as f:
+            temp = DEFAULT_SETTINGS.copy()
+            temp['source_mp3'] = os.path.join(target_dir, "media", cur['filename'])
+            json.dump(temp, f)
+
+        if not os.path.isfile(meta_file):
+            print("")
+            print(f"Transcribing {i+1:,} of {len(todo):,}: '{cur['title']}'...")
+            subprocess.check_call(['python3', 'to_text.py', 'create_webpage_and_data', temp_fn])
+            stats['transcribed'] += 1
+        elif not os.path.isfile(web_page):
+            print("")
+            print(f"Making web page for {i+1:,} of {len(todo):,}: '{cur['title']}'...")
+            subprocess.check_call(['python3', 'to_text.py', 'create_webpage_and_data', temp_fn])
+
+        for fn in [temp_fn, temp_fn + ".gz"]:
+            if os.path.isfile(fn):
+                os.unlink(fn)
+
     print("")
     print(f"Done. Downloaded {stats['downloaded']:,}, transcribed {stats['transcribed']:,}, and {stats['already_done']:,} already done.")
 
+def get_settings(target_dir):
+    fn = os.path.join(target_dir, "settings.json")
+    if os.path.isfile(fn):
+        with open(fn) as f:
+            return json.load(f)
+
+    url = input("Enter podcast RSS feed URL: ")
+    engine_override = input("Enter filename of settings file for Engine override (blank for none): ")
+
+    print("URL: " + url)
+    if len(engine_override) == 0:
+        engine_override = None
+        print("Engine: (Use default)")
+    else:
+        print("Engine: " + engine_override)
+    
+    yn = input("Does this look ok? [y/(n)] ")
+    if yn != "y":
+        exit(1)
+    
+    settings = {
+        "engine": engine_override,
+        "podcast": url,
+    }
+
+    with open(fn, "wt", newline="", encoding="utf-8") as f:
+        json.dump(settings, f, indent=4)
+
+    print("Settings saved!")
+
+    return settings
+
 def main():
     # Wrapper to parse command line args and call the helper
-    if len(sys.argv) in {3, 4}:
-        process_feed(*sys.argv[1:])
+    if len(sys.argv) == 2:
+        settings = get_settings(sys.argv[1])
+        process_feed(sys.argv[1], settings)
     else:
         print("Usage:")
-        print(f"  {__file__} <RSS URL> <Target Dir> (<settings file>)")
+        print(f"  {__file__} <Target Dir>")
         exit(1)
 
 if __name__ == "__main__":
