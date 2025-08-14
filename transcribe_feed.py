@@ -190,15 +190,10 @@ def process_feed(target_dir, settings):
             temp['source_mp3'] = os.path.join(target_dir, "media", cur['filename'])
             json.dump(temp, f)
 
-        if not os.path.isfile(meta_file):
-            print("")
-            print(f"Transcribing {i+1:,} of {len(todo):,}: '{cur['title']}'...")
-            subprocess.check_call(['python3', 'to_text.py', 'create_webpage_and_data', temp_fn])
-            stats['transcribed'] += 1
-        elif not os.path.isfile(web_page):
-            print("")
-            print(f"Making web page for {i+1:,} of {len(todo):,}: '{cur['title']}'...")
-            subprocess.check_call(['python3', 'to_text.py', 'create_webpage_and_data', temp_fn])
+        print("")
+        print(f"Working on {i+1:,} of {len(todo):,}: '{cur['title']}'...")
+        subprocess.check_call(['python3', 'to_text.py', 'create_webpage_and_data', temp_fn])
+        stats['transcribed'] += 1
 
         for fn in [temp_fn, temp_fn + ".gz"]:
             if os.path.isfile(fn):
