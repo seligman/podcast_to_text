@@ -4,9 +4,6 @@ This is a utility to turn a MP3 file into a HTML page with a machine generated t
 
 ![Preview](examples/preview.png)
 
-While this is still a WIP, please check out [`usage.md`](usage.md) for more details on how to run this end to end, along 
-with creating a search page [like this example](https://seligman.github.io/podcasts/houston_we_have_a_podcast/houston_we_have_a_podcast.html).
-
 Supported engines:
 
 * [AWS Transcribe](https://aws.amazon.com/transcribe/) -- [Sample output](https://seligman.github.io/podcast_to_text/Example-Results-AWS-Transcribe.html)
@@ -17,6 +14,8 @@ Supported engines:
 * [WhisperX](https://github.com/m-bain/whisperX) -- Sample output: [Medium](https://seligman.github.io/podcast_to_text/Example-Results-WhisperX-Medium.html) model.
 
 ## Search:
+
+Check out [`usage.md`](usage.md) for more details on how to run this end to end, along with creating a search page [like this example](https://seligman.github.io/podcasts/houston_we_have_a_podcast/houston_we_have_a_podcast.html).
 
 Please see [`search_instructions.md`](search_instructions.md) for details on how to use a couple of helper scripts in this repo to download a podcast, transcribe all audio files in it, and create a search page to search the transcripts of the podcast.
 
