@@ -40,6 +40,11 @@ def run_engine(settings, source_fn):
         hf_token = os.environ["HF_TOKEN"]
 
     import whisperx, torch # type: ignore
+    # This moved to a new home, so fallback to the old home for older versions of WhisperX
+    try:
+        from whisperx.diarize import DiarizationPipeline # type: ignore
+    except:
+        from whisperx import DiarizationPipeline # type: ignore
 
     args = {
         'best_of': 5,
@@ -62,7 +67,7 @@ def run_engine(settings, source_fn):
     del model_a; gc.collect(); torch.cuda.empty_cache()
 
     print("Performing speaker diarization...")
-    diarize_model = whisperx.DiarizationPipeline(use_auth_token=hf_token, device=device)
+    diarize_model = DiarizationPipeline(use_auth_token=hf_token, device=device)
 
     diarize_segments = diarize_model(audio)
     result = whisperx.assign_word_speakers(diarize_segments, result)
