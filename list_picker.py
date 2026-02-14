@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__version__ = 49        # Version of this package
+__version__ = 50        # Version of this package
 DEBUG_PRINT = False     # Set this to True to log all print() output
 DEBUG_INPUT = False     # Set this to True to log all input received
 DELAY_INPUT = False     # Set this to True to take 1 second to process each key
@@ -9,6 +9,7 @@ import os
 import re
 import textwrap
 import unicodedata
+import select
 
 # Return a getch() wrapper, depending on the OS being called from
 if os.name == "nt":
@@ -54,10 +55,12 @@ else:
                     return chr(ret[0])
             else:
                 while True:
-                    ret = os.read(self.fd, 1)
-                    if ret is not None and len(ret) > 0:
-                        _debug_getch(ret, "_getch_unix.2")
-                        return chr(ret[0])
+                    rlist, _, _ = select.select([self.fd], [], [])
+                    if rlist:
+                        ret = os.read(self.fd, 1)
+                        if ret:
+                            _debug_getch(ret, "_getch_unix.2")
+                            return chr(ret[0])
         def __exit__(self, *args, **kargs):
             termios.tcsetattr(self.fd, termios.TCSANOW, self.old_settings)
 
