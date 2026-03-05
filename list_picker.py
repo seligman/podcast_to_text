@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-__version__ = 50        # Version of this package
+__version__ = 51        # Version of this package
 DEBUG_PRINT = False     # Set this to True to log all print() output
 DEBUG_INPUT = False     # Set this to True to log all input received
 DELAY_INPUT = False     # Set this to True to take 1 second to process each key
@@ -95,7 +95,6 @@ if DEBUG_PRINT:
         # Call the real print implementation
         _old_print(*args, **kargs)
 
-
 def _ansi_code(m):
     # Helper to turn <x> codes into ANSI output
     code = m.group("code")
@@ -133,7 +132,6 @@ def _ansi_code(m):
     
     return temp.format(num=num)
 
-
 def escape_ansi(value):
     # Escapes an string so it will print as-is in ANSI output
     ret = ""
@@ -145,7 +143,6 @@ def escape_ansi(value):
         else:
             ret += x
     return ret
-
 
 def _debug_getch(value, call_no):
     if DEBUG_INPUT:
@@ -180,7 +177,6 @@ def _debug_getch(value, call_no):
                 msg,
                 call_no]) + "\n")
     return value
-
 
 def getkey(getch):
     # Use getch to detect a single key press, and decode
@@ -241,7 +237,6 @@ def getkey(getch):
 
     return ret
 
-
 def get_ansi(value, simple_mode=None):
     # Turn a string like "This is <invert>inverted<revert>" into the 
     # escape sequences to send it to an ANSI terminal
@@ -258,16 +253,13 @@ def get_ansi(value, simple_mode=None):
     
     return value
 
-
 def print_ansi(value, flush=False):
     # Print out an ANSI code, decoding it first
     print(get_ansi(value), end="", flush=flush)
 
-
 def len_ansi(value):
     # Helper to get the length of an ANSI string in terms of number of characters that are displayed
     return len(get_ansi(value, simple_mode=True))
-
 
 _need_enable = True
 _simple_mode = False
@@ -283,9 +275,11 @@ def enable_ansi():
             if kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7) == 0:
                 _simple_mode = True
 
-
 def get_term_size(getch):
-    return 120, 30
+    size = os.get_terminal_size()
+    return size.columns, size.lines
+
+    # return 120, 30
 
     # Get the size of the terminal, really, just move to the bottom right corner, 
     # ask the terminal "where are we", and report the results
@@ -354,13 +348,11 @@ def _split_items(opts, multiline, width):
             temp.append(cur)
     return temp
 
-
 def unicode_len(value):
     # Helper to return the length of a string taking into account full width characters that take 
     # up two spots in a traditional output terminal
     value = re.sub("\x1b\\[[0-9]+m", "", value)
     return len(value) + sum(unicodedata.east_asian_width(x) in 'FW' for x in value)
-
 
 class Settings():
     # A class to save and restore settings, and present a small TUI allowing the user
@@ -1014,7 +1006,6 @@ def list_picker(opts, max_rows=-1, line_numbers=True, scroll_bar=True, keep_head
             # Make sure to turn the cursor back on before we're done
             print_ansi("\n<show>", flush=True)
 
-
 def test_ui():
     swapping = [
         "1. Alpha (changes to something else)",
@@ -1170,7 +1161,6 @@ def test_ui():
 
     x = list_picker(opts, **args)
     print(f"You picked {x}!")
-
 
 if __name__ == "__main__":
     test_ui()
